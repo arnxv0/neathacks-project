@@ -1,0 +1,60 @@
+section,variable,base,downside,upside,unit,start_month,notes
+model,model_start,2026-11,2026-11,2026-11,month,,24-month monthly forecast
+pricing,price_pro_monthly,499,499,499,USD/mo,1,annual option 4990
+pricing,price_team_monthly,1999,1999,1999,USD/mo,6,annual option 19990
+pricing,price_enterprise_acv,75000,60000,90000,USD/yr,9,average ACV; billed annually upfront
+pricing,price_assessment,7500,7500,7500,USD one-off,2,service
+pricing,overage_per_run_pro,0.05,0.05,0.05,USD/run,1,
+pricing,overage_per_fix_pro,5,5,5,USD/fix,1,
+pricing,overage_revenue_share_of_pro_mrr,0.05,0.03,0.08,ratio,1,simplified overage assumption
+funnel,free_signups_month1,60,40,80,signups,1,
+funnel,free_signup_growth_mom,0.20,0.12,0.30,ratio,1,
+funnel,free_to_pro_new_signup_conversion,0.04,0.025,0.06,ratio,1,converts in signup month
+funnel,free_base_monthly_conversion,0.01,0.005,0.015,ratio,1,of cumulative free base
+funnel,pro_to_team_upgrade_monthly,0.03,0.02,0.04,ratio,6,
+funnel,new_team_direct_per_month,1,0,2,customers,6,+1 every 4 months in base
+funnel,enterprise_first_month,9,12,7,month,,
+funnel,enterprise_deals_per_quarter_until_m18,1,1,3,deals,9,then 1/mo from month 18 (base)
+funnel,assessments_per_month,2,1,3,deals,3,1 in month 2; 4/mo from month 9 (base)
+funnel,assessment_to_subscription,0.40,0.25,0.50,ratio,3,within 2 months
+retention,churn_pro_monthly,0.04,0.06,0.03,ratio,1,
+retention,churn_team_monthly,0.02,0.03,0.015,ratio,6,
+retention,churn_enterprise_annual,0.10,0.15,0.05,ratio,9,
+retention,nrr_team_enterprise,1.15,1.05,1.25,ratio,,net revenue retention
+cash_timing,annual_prepay_share_pro,0.20,0.10,0.30,ratio,1,
+cash_timing,annual_prepay_share_team,0.40,0.30,0.50,ratio,6,
+cac,cac_pro,800,1200,600,USD/customer,1,
+cac,cac_team,6000,9000,4500,USD/customer,6,
+cac,cac_enterprise,30000,45000,25000,USD/customer,9,
+cogs,cost_per_attack_run,0.02,0.03,0.015,USD/run,1,REPLACE with measured (neatlogs)
+cogs,cost_per_fix_attempt,2.00,3.00,1.50,USD/attempt,1,REPLACE with measured
+cogs,attempts_per_accepted_fix,1.4,1.8,1.2,ratio,1,REPLACE with measured
+cogs,cost_per_full_assessment,20,35,14,USD,1,250 runs + 5 fixes; REPLACE with cost_report.csv
+cogs,cogs_pro_per_customer_monthly,90,150,65,USD/mo,1,
+cogs,cogs_team_per_customer_monthly,450,700,330,USD/mo,6,
+cogs,cogs_enterprise_per_customer_monthly,1700,2500,1300,USD/mo,9,
+cogs,cogs_assessment_delivery,470,600,400,USD/assessment,2,incl ~6h human review
+cogs,platform_infra_base_monthly,500,500,500,USD/mo,1,
+cogs,platform_infra_per_paying_customer,15,20,12,USD/mo,1,
+cogs,payment_processing_rate,0.05,0.05,0.05,ratio,1,Dodo Payments MoR; verify rate
+headcount,founder1_ceo,6000,6000,6000,USD/mo loaded,1,10000 after seed
+headcount,founder2_cto,6000,6000,6000,USD/mo loaded,1,10000 after seed
+headcount,founding_engineer,14000,14000,14000,USD/mo loaded,4,
+headcount,ai_security_researcher,15000,15000,15000,USD/mo loaded,6,
+headcount,founding_ae_base,10000,10000,10000,USD/mo loaded,9,plus 10% of new ACV commission
+headcount,engineer_2,14000,14000,14000,USD/mo loaded,12,
+headcount,solutions_engineer,14000,14000,14000,USD/mo loaded,15,
+headcount,engineer_3,14000,14000,14000,USD/mo loaded,18,
+opex,tools_saas_base,800,800,800,USD/mo,1,+150 per hire
+opex,marketing_monthly,2000,2000,3000,USD/mo,1,6000/mo from month 12
+opex,conferences_quarterly,15000,10000,20000,USD/quarter,9,
+opex,legal_accounting_monthly,2000,2000,2000,USD/mo,1,
+opex,incorporation_one_off,5000,5000,5000,USD,1,
+opex,soc2_type1,35000,35000,35000,USD one-off,8,
+opex,soc2_type2,25000,25000,25000,USD one-off,14,
+opex,insurance_annual,12000,12000,12000,USD/yr,6,
+opex,pentest_one_off,10000,10000,10000,USD,10,
+funding,starting_cash,25000,25000,25000,USD,1,
+funding,preseed_amount,750000,500000,1000000,USD,3,SAFE
+funding,seed_amount,3000000,0,5000000,USD,12,upside month 10; downside not raised
+funding,min_cash_buffer_months,6,6,6,months,,

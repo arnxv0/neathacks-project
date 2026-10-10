@@ -104,7 +104,7 @@ It lives in its **own single repo** (`acmesales-copilot`, with Entire enabled) a
 |---|---|---|
 | **neatlogs** (required) | Records every run. Preflight **reads traces back** (`GET /api/traces/v3/:traceId`) to grade, cluster and find divergence | Trace link with the divergence step highlighted, and cost per run |
 | **Entire** (required) | A checkpoint with reasoning on every fix. entire-graph finds the responsible code and, later, the commit that caused a regression | Checkpoint view, "regression caused by commit X" |
-| **cfo.ai** (required) | Pricing, costs and runway, built from the measured cost per run in `cost_report.csv` | Final beat of the demo |
+| **cfo.ai** (required) | Pricing, costs and runway (model built from `BUSINESS.md` + `cfo/assumptions.csv`). After a full run, measured COGS from `cost_report.csv` is pushed into a **"Measured" Scenario via the cfo.ai MCP server** | Final beat: real run → real cost → the business model updates itself |
 | **Orchestrator.inc** (sponsor; its founder is a judge) | Runs fixer agents in parallel with `ao spawn`, one worktree each | Fixers running side by side |
 | **LiteLLM** (hackathon credit) / optional **AWS Bedrock** | The model gateway for the target and for Preflight | — |
 | **Crustdata** | The target's company data, and the injection vector | The poisoned company record |
@@ -162,4 +162,4 @@ Details are in `CLAUDE.md`. In short: an allowlist plus an ownership token on th
 | neatlogs instrumentation | Auto-instrumentation covers the OpenAI-compatible client used for LiteLLM | Wrap model and tool calls with manual `@span`s |
 | Orchestrator.inc dispatch | `ao spawn --agent <claude-code adapter> --prompt … --branch …` works from a script, with the `ao` daemon running | The same `Fixer` interface, backed by `claude -p` in git worktrees |
 | entire-graph | Can map a divergence step or file to the commit and checkpoint behind it | `git blame` plus `entire` checkpoint lookup by commit |
-| cfo.ai | No API | Preflight only writes `cost_report.csv`, and a human enters it |
+| cfo.ai | MCP server at `https://api.cfo.ai/mcp` can edit an existing model's Variables/Scenarios (it can't build the model from scratch) | A human attaches `cost_report.csv` to Ari and asks it to update COGS |
