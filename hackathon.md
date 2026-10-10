@@ -21,6 +21,10 @@
 - First full loop on D1: 3 clusters → 3 parallel Claude Code fixers → every fix passed replay 0/1 → 2/2 → approved from the API → merged → regression test saved. The fixer diff was the right one (tool output framed as untrusted data, provider text fenced).
 - Entire: commits carry checkpoint trailers, but checkpoint data wasn't condensed when the fixer committed inside a git worktree (`no files modified during session`). Testing shared clones as the fallback.
 - Dashboard: Next.js scorecard, clusters/divergence with neatlogs links, fixer board, fix detail with replay proof, checkpoint panel, diff, review actions, regressions, cost.
+- Approvals through the dashboard: first fix merged; the other two conflicted with it, so Preflight replayed their clusters against main, found main already passed, and recorded them as fixed (a "recovery from a failed action" the judges asked for). Regression suite 3/3 holding; after-pass **3/3 → 0/3**.
+- Breadth: all 20 P0 attacks (50 seeds) run find-only on the fixed main: 8/20 still succeed (retries without backoff, unconfirmed credits, role claims, prompt leak, crash on empty input). The analyst merged 5 signature clusters into 3 root causes; 3 fixers dispatched in parallel.
+- Entire: commit condensation hangs in Entire's post-commit hook during agent sessions, so Preflight now commits on the fixer's behalf after the session ends (trailer kept, no hang). entire-graph installed: `impact`/`search` output (blast radius, co-change coupling between `crustdata.py` and `system.md`) goes into every fixer brief and the cluster view.
+- Remotion explainer (`apps/video`): 8 scenes, numbers injected from `out/report.json` (`make video`).
 
 ## Submission checklist
 - [ ] Public repos with hackathon-dated commits (Preflight repo is still private — owner to flip)
