@@ -1,0 +1,62 @@
+# Preflight — make targets. Services run in Docker Compose; fixers + Entire run on the host.
+SHELL := /bin/bash
+TARGET ?= ../acmesales-copilot
+MODE ?= dev
+PROXY_PORT ?= 8300
+export PATH := $(HOME)/.local/bin:$(PATH)
+
+.PHONY: setup up down logs dev-host target-host proxy-host api-host web-host run run-full demo test regress stop clean-ledger
+
+setup:            ## install python deps for both repos + web deps
+	uv sync
+	cd $(TARGET) && uv sync
+	cd apps/web && npm install --no-audit --no-fund
+
+up:               ## start target, proxy, api, web in Docker
+	docker compose up -d --build
+	@echo "target :8100  proxy :8300  api :8200  web :3000"
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f --tail=100
+
+# --- host mode (escape hatch when Docker is slow) ---
+target-host:
+	cd $(TARGET) && CRUSTDATA_BASE_URL=http://127.0.0.1:$(PROXY_PORT) uv run uvicorn app.main:app --host 127.0.0.1 --port 8100
+proxy-host:
+	uv run preflight proxy --port $(PROXY_PORT)
+api-host:
+	uv run preflight web --port 8200
+web-host:
+	cd apps/web && npm run dev
+dev-host:         ## tmux session with target, proxy, api, web on the host
+	tmux kill-session -t preflight 2>/dev/null || true
+	tmux new-session -d -s preflight -n target 'make target-host'
+	tmux new-window -t preflight -n proxy 'make proxy-host'
+	tmux new-window -t preflight -n api 'make api-host'
+	tmux new-window -t preflight -n web 'make web-host'
+	@echo "tmux attach -t preflight"
+
+run:              ## dev-mode assessment
+	uv run preflight run $(TARGET) --mode $(MODE) $(if $(ATTACKS),--attacks $(ATTACKS),)
+run-full:
+	uv run preflight run $(TARGET) --mode full
+
+demo: up          ## full demo from a fresh clone: services up, then the full loop
+	uv run preflight init $(TARGET)
+	uv run preflight run $(TARGET) --mode full
+
+test:
+	uv run pytest -q
+	cd $(TARGET) && make test
+
+regress:
+	uv run preflight regress $(TARGET)
+
+stop:
+	uv run preflight stop
+
+clean-ledger:
+	rm -rf ledger/* && touch ledger/.gitkeep

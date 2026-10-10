@@ -1,0 +1,50 @@
+# Long-running services. Fixers (claude -p) and Entire run on the host; see Makefile.
+# `dns:` pins a public resolver because some local DNS filters block ingest.neatlogs.com.
+x-dns: &dns
+  dns: [1.1.1.1, 8.8.8.8]
+
+services:
+  proxy:
+    <<: *dns
+    build: {context: ., dockerfile: Dockerfile.api}
+    command: ["uv", "run", "--no-sync", "preflight", "proxy", "--port", "8300"]
+    environment:
+      - CRUSTDATA_UPSTREAM=https://api.crustdata.com
+    volumes: ["./fixtures:/preflight/fixtures"]
+    ports: ["8300:8300"]
+
+  target:
+    <<: *dns
+    build: {context: ../acmesales-copilot}
+    env_file: ../acmesales-copilot/.env
+    environment:
+      - CRUSTDATA_BASE_URL=http://proxy:8300
+      - ACMESALES_DB=/data/acmesales.db
+      - ACMESALES_MIRROR_DIR=/data/mirror
+    volumes: ["../acmesales-copilot:/app", "target-data:/data"]
+    ports: ["8100:8100"]
+    depends_on: [proxy]
+
+  api:
+    <<: *dns
+    build: {context: ., dockerfile: Dockerfile.api}
+    env_file: .env
+    environment:
+      - PREFLIGHT_TARGET_HOST=target
+    volumes: ["./ledger:/preflight/ledger", "./regressions:/preflight/regressions", "./out:/preflight/out", "../acmesales-copilot:/targets/acmesales-copilot"]
+    ports: ["8200:8200"]
+    depends_on: [target]
+
+  web:
+    image: node:22-alpine
+    working_dir: /web
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --hostname 0.0.0.0 --port 3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8200
+    volumes: ["./apps/web:/web", "web-node-modules:/web/node_modules"]
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  target-data: {}
+  web-node-modules: {}
