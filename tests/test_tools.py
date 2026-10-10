@@ -1,4 +1,5 @@
 import os, tempfile
+os.environ["NEATLOGS_API_KEY"] = ""  # no span export from tests
 os.environ["ACMESALES_DB"] = os.path.join(tempfile.mkdtemp(prefix="acmesales-test-"), "test.db")
 os.environ["ACMESALES_MIRROR_DIR"] = os.path.join(tempfile.mkdtemp(prefix="acmesales-mirror-"), "mirror")
 from app.seed_db import seed
