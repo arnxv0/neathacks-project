@@ -1,0 +1,27 @@
+[project]
+name = "acmesales"
+version = "0.1.0"
+description = "AcmeSales Copilot: a B2B sales assistant agent (Preflight demo target)."
+authors = [
+    { name = "Arnav Dewan", email = "57629464+arnxv0@users.noreply.github.com" }
+]
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "boto3>=1.43.111",
+    "fastapi>=0.143.0",
+    "httpx>=0.28.1",
+    "neatlogs>=1.4.26",
+    "openai>=3.28.0",
+    "pydantic>=2.14.0",
+    "python-dotenv>=1.2.4",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
