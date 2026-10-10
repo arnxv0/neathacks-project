@@ -92,3 +92,29 @@ def remove_worktree(repo: pathlib.Path, cluster_id: str) -> None:
     wt = worktrees_dir(repo) / cluster_id
     subprocess.run(["git", "worktree", "remove", "--force", str(wt)], cwd=repo, capture_output=True)
     shutil.rmtree(wt, ignore_errors=True)
+
+
+def existing_commit(repo: pathlib.Path, cluster_id: str) -> str | None:
+    """HEAD of the cluster's fix worktree if it is ahead of main."""
+    wt = worktrees_dir(repo) / cluster_id
+    if not wt.exists():
+        return None
+    r = subprocess.run(["git", "rev-list", "--count", "main..HEAD"], cwd=wt, capture_output=True, text=True)
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=wt, capture_output=True, text=True).stdout.strip() if int(r.stdout or 0) > 0 else None
+    except ValueError:
+        return None
+
+def resume_attempt(ledger: Ledger, cluster: Cluster, spec: AttackSpec, system: SystemSpec, fixer: Fixer, *, tools_meta: dict) -> tuple[FixAttempt, FixHandle]:
+    """Attempt 1 from an existing worktree commit (coordinator restart)."""
+    comp = system.components[cluster.component]
+    fdir = ledger.fix_dir(cluster.cluster_id, 1)
+    brief_path = ledger.fix_dir(cluster.cluster_id) / "brief.md"
+    if not brief_path.exists():
+        brief_path.write_text(briefmod.render(ledger, cluster, spec, editable_paths=comp.editable_paths, test_command=comp.test_command, tools_meta=tools_meta))
+    attempt = FixAttempt(cluster_id=cluster.cluster_id, n=1, component=cluster.component, backend=fixer.name, branch=branch_for(cluster.cluster_id),
+                         log_path=str(fdir / "fixer.log"), status="running")
+    ledger.write_attempt(attempt)
+    handle = FixHandle(cluster_id=cluster.cluster_id, branch=attempt.branch, worktree=worktrees_dir(comp.repo_path) / cluster.cluster_id, log_path=fdir / "fixer.log")
+    (fdir / "fixer.log").touch()
+    return attempt, handle

@@ -62,7 +62,7 @@ class ReplayTarget:
 
 def replay_cluster(ledger: Ledger, cluster: Cluster, spec: SystemSpec, worktree: pathlib.Path, k: int, *, specs: dict[str, AttackSpec],
                    seed_of: dict[str, tuple[AttackSpec, Seed]], guard: Guard, canaries: dict, watchlist: dict, tools_meta: dict,
-                   kind: str = "replay", on_progress=None, label: str = "") -> Replay:
+                   budgets: dict | None = None, kind: str = "replay", on_progress=None, label: str = "") -> Replay:
     """Returns before/after. 'before' = pass count among the cluster's original runs."""
     original = [ledger.read_run(r) for r in cluster.run_ids]
     before = f"{sum(1 for r in original if not r.failed)}/{len(original)}"
@@ -80,7 +80,7 @@ def replay_cluster(ledger: Ledger, cluster: Cluster, spec: SystemSpec, worktree:
                     pass
                 new_id = f"{kind}-{cluster.cluster_id[:24]}-{seed.id}-{i+1}-{os.urandom(2).hex()}"
                 run, steps, state = run_one(attack, seed, rspec, ledger, guard, mode="replay", target_commit=commit, kind=kind, run_id=new_id)
-                run = grade_run(ledger, attack, seed, run, canaries=canaries, watchlist=watchlist, budgets=spec.budgets, tools_meta=tools_meta)
+                run = grade_run(ledger, attack, seed, run, canaries=canaries, watchlist=watchlist, budgets=budgets or spec.budgets, tools_meta=tools_meta)
                 total += 1; passed += 0 if run.failed else 1; run_ids.append(run.run_id)
                 if on_progress:
                     on_progress(passed, total, run)

@@ -25,3 +25,21 @@ def hypothesize(gw: Gateway, cluster: Cluster, spec: AttackSpec, divergence_md: 
         return str(data.get("hypothesis", "")).strip(), [str(p) for p in data.get("suspected_paths", [])][:5]
     except Exception:
         return out.text.strip()[:300], list(sources.values())[:2]
+
+
+def merge_groups(gw: Gateway, clusters: list[Cluster]) -> list[tuple[list[str], str]]:
+    """Return groups of cluster ids that share ONE root cause (so one fix closes all), with a reason."""
+    rows = "\n".join(f"- {c.cluster_id}: attacks={c.attack_ids} graders={c.failing_graders} hypothesis={c.hypothesis[:220]}" for c in clusters)
+    prompt = [
+        {"role": "system", "content": "You de-duplicate failure clusters for an engineering team. Two clusters share a root cause only if ONE code or prompt change "
+         "would plausibly fix both. Answer strict JSON: {\"groups\": [{\"cluster_ids\": [...], \"reason\": \"...\"}]} and leave out singletons."},
+        {"role": "user", "content": rows},
+    ]
+    out = gw.complete("analyst", prompt, tier="strong", temperature=0.0, max_tokens=300)
+    data = parse_json(out.text)
+    groups = []
+    for g in data.get("groups", []):
+        ids = [str(i) for i in g.get("cluster_ids", [])]
+        if len(ids) >= 2:
+            groups.append((ids, str(g.get("reason", ""))[:200]))
+    return groups

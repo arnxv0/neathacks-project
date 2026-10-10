@@ -211,24 +211,65 @@ class Coordinator:
             self.ledger.write_cluster(c, divergence_md=md)
             self.emit("divergence.ready", cluster_id=c.cluster_id, step_index=div.step_index, mode=div.mode, trace_links=div.trace_links, hypothesis=hyp)
             console.print(f"[magenta]{c.cluster_id}[/] step {div.step_index} ({div.mode}): {hyp}")
+        clusters = self._merge_clusters(clusters)
         return clusters
 
+    def _merge_clusters(self, clusters: list[Cluster]) -> list[Cluster]:
+        """Ask the analyst which clusters share one root cause; merge them so one fixer handles one cause."""
+        if len(clusters) < 2:
+            return clusters
+        try:
+            groups = analyst.merge_groups(self.gateway, clusters)
+        except Exception as e:
+            console.print(f"[yellow]analyst merge skipped: {e}"); return clusters
+        if not groups:
+            return clusters
+        merged: list[Cluster] = []
+        used: set[str] = set()
+        for ids, reason in groups:
+            members = [c for c in clusters if c.cluster_id in ids and c.cluster_id not in used]
+            if len(members) < 2:
+                continue
+            head = members[0]
+            for other in members[1:]:
+                head.run_ids += [r for r in other.run_ids if r not in head.run_ids]
+                head.attack_ids = sorted(set(head.attack_ids) | set(other.attack_ids))
+                head.failing_graders = sorted(set(head.failing_graders) | set(other.failing_graders))
+                head.suspected_paths = list(dict.fromkeys(head.suspected_paths + other.suspected_paths))
+                other.status = "merged_into:" + head.cluster_id
+                self.ledger.write_cluster(other)
+                import shutil as _sh; _sh.rmtree(self.ledger.root / "clusters" / other.cluster_id, ignore_errors=True)
+            head.signature += f" | merged: {', '.join(m.cluster_id for m in members[1:])} ({reason})"
+            self.ledger.write_cluster(head)
+            self.emit("cluster.merged", cluster_id=head.cluster_id, absorbed=[m.cluster_id for m in members[1:]], reason=reason)
+            console.print(f"[magenta]merged[/] {[m.cluster_id for m in members[1:]]} into {head.cluster_id}: {reason}")
+            used |= {m.cluster_id for m in members}
+            merged.append(head)
+        rest = [c for c in clusters if c.cluster_id not in used]
+        return merged + rest
+
     # ---- fix phase ----
-    def _fix_cluster(self, cluster: Cluster) -> Cluster:
+    def _fix_cluster(self, cluster: Cluster, resume: bool = False) -> Cluster:
         spec = self.specs[cluster.attack_ids[0]]
         kw = self._grading_kw()
         comp = self.spec.components[cluster.component]
         max_retries = config.CFG.fixers.get("max_retries", 2)
         handle = None; replay_failure = None
         cluster.status = "fixing"; self.ledger.write_cluster(cluster)
+        existing = dispatcher.existing_commit(comp.repo_path, cluster.cluster_id) if resume else None
         for n in range(1, max_retries + 2):
-            self.emit("fix.started", cluster_id=cluster.cluster_id, attempt=n, backend=self.fixer.name)
-            attempt, handle = dispatcher.start_attempt(self.ledger, cluster, spec, self.spec, self.fixer, n, tools_meta=kw["tools_meta"],
-                                                       replay_failure=replay_failure, prev=handle if n > 1 else None)
-            if n > 1:
-                res = self.fixer.send(handle, self.ledger.fix_dir(cluster.cluster_id, n) / "message.md", timeout_s=900)
+            self.emit("fix.started", cluster_id=cluster.cluster_id, attempt=n, backend=self.fixer.name, resumed=bool(existing and n == 1))
+            if existing and n == 1:
+                # a fixer already committed on this cluster's branch (e.g. the coordinator was restarted): reuse it
+                attempt, handle = dispatcher.resume_attempt(self.ledger, cluster, spec, self.spec, self.fixer, tools_meta=kw["tools_meta"])
+                res = self.fixer._collect(handle)
             else:
-                res = self.fixer.wait(handle, timeout_s=900)
+                attempt, handle = dispatcher.start_attempt(self.ledger, cluster, spec, self.spec, self.fixer, n, tools_meta=kw["tools_meta"],
+                                                           replay_failure=replay_failure, prev=handle if n > 1 else None)
+                if n > 1:
+                    res = self.fixer.send(handle, self.ledger.fix_dir(cluster.cluster_id, n) / "message.md", timeout_s=900)
+                else:
+                    res = self.fixer.wait(handle, timeout_s=900)
             attempt = dispatcher.finish_attempt(self.ledger, attempt, handle, res, comp.repo_path)
             self.emit("fix.attempt.done", cluster_id=cluster.cluster_id, attempt=n, ok=res.ok, commit=attempt.commit,
                       checkpoint=attempt.entire_checkpoint_id, tests_green=attempt.tests_green, cost_usd=attempt.cost_usd, error=res.error)
@@ -264,7 +305,7 @@ class Coordinator:
         self.emit("cluster.needs_human", cluster_id=cluster.cluster_id)
         return cluster
 
-    def fix(self, clusters: list[Cluster]) -> list[Cluster]:
+    def fix(self, clusters: list[Cluster], resume: bool = False) -> list[Cluster]:
         if not clusters:
             return clusters
         self.state("FIX")
@@ -272,7 +313,7 @@ class Coordinator:
         console.print(f"fixer backend: {self.fixer.name}; {len(clusters)} clusters, up to {config.CFG.fixers.get('max_parallel', 3)} in parallel")
         out = []
         with ThreadPoolExecutor(max_workers=config.CFG.fixers.get("max_parallel", 3)) as ex:
-            for c in as_completed([ex.submit(self._fix_cluster, c) for c in clusters]):
+            for c in as_completed([ex.submit(self._fix_cluster, c, resume) for c in clusters]):
                 try:
                     out.append(c.result())
                 except Exception as e:
@@ -292,7 +333,22 @@ class Coordinator:
             raise RuntimeError("no attempt has passed replay; nothing to approve")
         a = attempts[-1]
         comp = self.spec.components[cluster.component]
-        merge_sha = dispatcher.merge(comp.repo_path, a.branch, cluster_id)
+        try:
+            merge_sha = dispatcher.merge(comp.repo_path, a.branch, cluster_id)
+        except RuntimeError as e:
+            # another approved fix touched the same lines. Does main already close this cluster?
+            console.print(f"[yellow]merge conflict for {a.branch}; checking whether main already closes the cluster…")
+            self.emit("recovery", kind="merge_conflict", cluster_id=cluster_id, detail=str(e)[:300])
+            rep = replaymod.replay_cluster(self.ledger, cluster, self.spec, comp.repo_path, self.mcfg.replay_k, specs=self.specs, seed_of=self.seed_of,
+                                           guard=self.guard, kind="replay", **self._grading_kw())
+            if rep.passed == rep.total:
+                merge_sha = process.target_version(comp)
+                a.summary = (a.summary or "") + f"\n[not merged: conflicted with an earlier approved fix; main already passes replay {rep.after}]"
+                a.replay = rep
+            else:
+                cluster.status = "needs_human"; self.ledger.write_cluster(cluster)
+                self.emit("cluster.needs_human", cluster_id=cluster_id, reason="merge conflict and main still fails replay")
+                raise
         a.status = "approved"; self.ledger.write_attempt(a)
         cluster.status = "merged"; self.ledger.write_cluster(cluster)
         spec = self.specs[cluster.attack_ids[0]]
@@ -333,6 +389,14 @@ class Coordinator:
         self.ledger.write_attempt(attempt)
         if attempt.status == "passed":
             self.emit("approval.needed", cluster_id=cluster_id, attempt=n, commit=attempt.commit, before=attempt.replay.before, after=attempt.replay.after)
+
+    def resume(self) -> None:
+        """Continue an interrupted assessment from the ledger: open clusters get fixed (reusing existing fixer commits), then approval."""
+        clusters = [c for c in self.ledger.clusters() if c.status in ("open", "fixing", "replaying")]
+        if not clusters:
+            console.print("nothing to resume; clusters are all resolved or awaiting approval"); self._maybe_finish(); return
+        self.fix(clusters, resume=True)
+        self.report()
 
     def _maybe_finish(self) -> None:
         open_ = [c for c in self.ledger.clusters() if c.status in ("open", "fixing", "replaying", "await_approval")]

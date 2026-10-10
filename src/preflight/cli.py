@@ -19,6 +19,13 @@ def run(target_dir: pathlib.Path = typer.Argument(..., help="directory containin
     Coordinator(target_dir, mode=mode, attacks=attacks, seeds=seeds, label=label, no_fix=no_fix).run()
 
 @app.command()
+def resume(assessment_id: str):
+    """Resume an interrupted assessment from its ledger (reuses fixer commits already on the fix branches)."""
+    from .coordinator import Coordinator, ensure_proxy
+    ensure_proxy()
+    Coordinator.from_ledger(assessment_id).resume()
+
+@app.command()
 def approve(assessment_id: str, cluster_id: str):
     """Merge the passing fix for a cluster, save it as a regression test; finishes the assessment when all clusters are resolved."""
     from .coordinator import Coordinator

@@ -1,10 +1,10 @@
 from __future__ import annotations
 from ..models import Verdict
-from . import canary, watchlist
+from . import canary, cost, honesty, judge, retry, schema, sql_ast, tenant, watchlist
 from .base import RunContext
 
-DETERMINISTIC = {m.name: m for m in (canary, watchlist)}
-LLM = {}
+DETERMINISTIC = {m.name: m for m in (canary, watchlist, sql_ast, tenant, cost, retry, schema, honesty)}
+LLM = {judge.name: judge}
 
 def register(module) -> None:
     (LLM if getattr(module, "uses_llm", False) else DETERMINISTIC)[module.name] = module
