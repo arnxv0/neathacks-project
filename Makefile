@@ -60,3 +60,7 @@ stop:
 
 clean-ledger:
 	rm -rf ledger/* && touch ledger/.gitkeep
+
+regress-demo:     ## reintroduce the D1 weakness in the target with a plausible refactor commit, then run the regression suite
+	./scripts/regress-demo.sh $(TARGET)
+	uv run preflight regress $(TARGET) || true

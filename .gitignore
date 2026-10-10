@@ -17,3 +17,5 @@ apps/video/out/
 STOP
 .DS_Store
 Session.vim
+apps/video/out/
+apps/video/node_modules/

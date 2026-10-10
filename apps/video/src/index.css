@@ -1,1 +1,3 @@
 @import "tailwindcss";
+:root { --bg: #0f1117; --card: #171a23; --fg: #f1f2f6; --muted: #8b90a0; --cyan: #5fd4ee; --pass: #4ade80; --fail: #f0564f; --pending: #f6c343; --trace: #b388ff; --cp: #6cb4ff; }
+.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
