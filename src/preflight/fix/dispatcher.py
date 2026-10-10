@@ -85,7 +85,8 @@ def merge(repo: pathlib.Path, branch: str, cluster_id: str) -> str:
     r = subprocess.run(["git", "merge", "--no-ff", branch, "-m", f"merge: {branch} (approved via Preflight for cluster {cluster_id})"],
                        cwd=repo, capture_output=True, text=True, env=env)
     if r.returncode != 0:
-        raise RuntimeError(f"merge failed: {r.stderr[-500:]}")
+        subprocess.run(["git", "merge", "--abort"], cwd=repo, capture_output=True)
+        raise RuntimeError(f"merge failed: {(r.stdout + r.stderr)[-500:]}")
     return subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True).stdout.strip()
 
 def remove_worktree(repo: pathlib.Path, cluster_id: str) -> None:
