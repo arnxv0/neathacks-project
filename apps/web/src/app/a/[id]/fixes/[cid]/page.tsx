@@ -25,7 +25,7 @@ export default function FixPage({ params }: { params: Promise<{ id: string; cid:
   return (
     <div className="space-y-6">
       <SectionHeader title={c.attack?.name ?? cid} subtitle={c.hypothesis}
-        right={<div className="flex items-center gap-2"><StatusBadge status={c.status} /><Button asChild variant="outline" size="sm"><Link href={`/a/${id}/clusters/${cid}`}>← divergence</Link></Button></div>} />
+        right={<div className="flex items-center gap-2"><StatusBadge status={c.status} /><Button variant="outline" size="sm" render={<Link href={`/a/${id}/clusters/${cid}`} />}>← divergence</Button></div>} />
       <Card className="relative overflow-hidden border-border/60">
         {running && <BorderBeam size={200} duration={5} colorFrom="oklch(0.8 0.14 200)" colorTo="oklch(0.72 0.17 300)" />}
         <CardContent className="p-5 flex flex-wrap items-center gap-6">

@@ -100,12 +100,12 @@ export function ReviewActions({ id, c }: { id: string; c: Cluster }) {
     <div className="flex flex-wrap items-center gap-2 relative">
       <Confetti ref={confetti} manualstart className="pointer-events-none absolute inset-0 -top-40 h-80 w-full" />
       <Button disabled={!canApprove || approve.isPending} onClick={() => approve.mutate(undefined, { onSuccess: () => { confetti.current?.fire({ particleCount: 160, spread: 90 }); toast.success("Approved: merging and saving regression test"); } })} className="bg-pass text-background hover:bg-pass/90"><Check className="size-4 mr-1" />Approve & merge</Button>
-      <Dialog><DialogTrigger asChild><Button variant="outline" disabled={!a}><MessageSquareWarning className="size-4 mr-1" />Request changes</Button></DialogTrigger>
+      <Dialog><DialogTrigger render={<Button variant="outline" disabled={!a} />}><MessageSquareWarning className="size-4 mr-1" />Request changes</DialogTrigger>
         <DialogContent><DialogHeader><DialogTitle>Send the fixer back</DialogTitle><DialogDescription>Your comment goes to the same Claude Code session; it revises, then replay runs again.</DialogDescription></DialogHeader>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="e.g. Don't special-case the domain; validate recipients against the tenant's allowed domains." rows={4} />
           <DialogFooter><Button onClick={() => requestChanges.mutate(comment, { onSuccess: () => toast.info("Fixer revising…") })} disabled={!comment}>Send</Button></DialogFooter></DialogContent></Dialog>
       <EditSheet id={id} c={c} />
-      <Dialog><DialogTrigger asChild><Button variant="ghost" className="text-fail"><X className="size-4 mr-1" />Reject</Button></DialogTrigger>
+      <Dialog><DialogTrigger render={<Button variant="ghost" className="text-fail" />}><X className="size-4 mr-1" />Reject</DialogTrigger>
         <DialogContent><DialogHeader><DialogTitle>Reject this fix</DialogTitle><DialogDescription>The cluster is marked needs_human and the branch is kept.</DialogDescription></DialogHeader>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="reason" rows={3} />
           <DialogFooter><Button variant="destructive" onClick={() => reject.mutate(comment || "rejected", { onSuccess: () => toast("Rejected") })}>Reject</Button></DialogFooter></DialogContent></Dialog>
@@ -119,7 +119,7 @@ function EditSheet({ id, c }: { id: string; c: Cluster }) {
   const load = async () => { const r = await api<{ files: Record<string, string> }>(`/api/assessments/${id}/clusters/${c.cluster_id}/files`); setFiles(r.files); };
   return (
     <Sheet onOpenChange={(o) => o && load()}>
-      <SheetTrigger asChild><Button variant="outline"><Pencil className="size-4 mr-1" />Edit myself</Button></SheetTrigger>
+      <SheetTrigger render={<Button variant="outline" />}><Pencil className="size-4 mr-1" />Edit myself</SheetTrigger>
       <SheetContent className="w-[min(900px,95vw)] sm:max-w-none overflow-y-auto">
         <SheetHeader><SheetTitle>Edit the fix directly</SheetTitle><SheetDescription>Files changed on <span className="mono">{c.attempts.at(-1)?.branch}</span>. Saving commits as you (Entire records it), then replay runs again before it can be merged.</SheetDescription></SheetHeader>
         <div className="space-y-4 p-4">

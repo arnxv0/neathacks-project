@@ -15,7 +15,7 @@ export default function ClusterPage({ params }: { params: Promise<{ id: string; 
   return (
     <div className="space-y-6">
       <SectionHeader title={c.attack?.name ?? cid} subtitle={c.attack?.description}
-        right={<div className="flex items-center gap-2"><StatusBadge status={c.status} />{c.attack_ids.map((a) => <Tone key={a} tone="fail">{a}</Tone>)}{c.owasp && <Tone tone="muted">{c.owasp}</Tone>}<Button asChild size="sm"><Link href={`/a/${id}/fixes/${cid}`}>Open fix →</Link></Button></div>} />
+        right={<div className="flex items-center gap-2"><StatusBadge status={c.status} />{c.attack_ids.map((a) => <Tone key={a} tone="fail">{a}</Tone>)}{c.owasp && <Tone tone="muted">{c.owasp}</Tone>}<Button size="sm" render={<Link href={`/a/${id}/fixes/${cid}`} />}>Open fix →</Button></div>} />
       <Mono>{cid}</Mono>
       <HypothesisCard c={c} />
       <Tabs defaultValue="divergence">

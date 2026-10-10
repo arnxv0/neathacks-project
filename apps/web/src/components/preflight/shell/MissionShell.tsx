@@ -64,7 +64,7 @@ export function MissionShell({ id, children }: { id: string; children: React.Rea
           <span className="text-xs text-muted-foreground hidden md:inline">{STATE_LABEL[state] ?? state}</span>
           {data?.manifest?.target_commit && <Mono>target @ {data.manifest.target_commit}</Mono>}
           <div className="ml-auto flex items-center gap-3">
-            <Tooltip><TooltipTrigger asChild><Mono className="text-foreground"><Activity className="inline size-3 mr-1 text-primary" />{money(spent, 3)}{data?.cost.cap_usd ? <span className="text-muted-foreground"> / {money(data.cost.cap_usd)}</span> : null}</Mono></TooltipTrigger><TooltipContent>LLM spend this assessment (target + Preflight) vs cap</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger render={<span />}><Mono className="text-foreground"><Activity className="inline size-3 mr-1 text-primary" />{money(spent, 3)}{data?.cost.cap_usd ? <span className="text-muted-foreground"> / {money(data.cost.cap_usd)}</span> : null}</Mono></TooltipTrigger><TooltipContent>LLM spend this assessment (target + Preflight) vs cap</TooltipContent></Tooltip>
             <Button size="sm" variant="destructive" className="h-8" onClick={() => stop.mutate(undefined, { onSuccess: () => toast.warning("Kill switch set: STOP file written") })}><Square className="size-3 mr-1" />Stop</Button>
           </div>
         </header>

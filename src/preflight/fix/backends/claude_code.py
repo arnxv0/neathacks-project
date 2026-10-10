@@ -83,7 +83,7 @@ class ClaudeCodeFixer:
         base = _git(["merge-base", "HEAD", "main"], h.worktree) or "HEAD~1"
         head = _git(["rev-parse", "HEAD"], h.worktree)
         # if the fixer edited but forgot to commit, commit for it so Entire still links the session
-        if _git(["status", "--porcelain"], h.worktree):
+        if _git(["status", "--porcelain", "-uno"], h.worktree):
             subprocess.run(["git", "add", "-A"], cwd=h.worktree)
             subprocess.run(["git", "commit", "-q", "-m", f"fix({h.cluster_id}): apply fixer changes\n\n{summary[:500]}"], cwd=h.worktree, env=_env())
             head = _git(["rev-parse", "HEAD"], h.worktree)

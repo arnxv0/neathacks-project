@@ -77,11 +77,9 @@ function AttackCell({ attack, score, afterScore, runs, id }: { attack: AttackInf
   const tone = !score ? "idle" : score.succeeded ? "fail" : "pass";
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Link href={`/a/${id}/clusters?attack=${attack.id}`} className={cn("rounded-lg border px-2.5 py-1.5 mono text-xs transition-all",
+      <TooltipTrigger render={<Link href={`/a/${id}/clusters?attack=${attack.id}`} />} className={cn("rounded-lg border px-2.5 py-1.5 mono text-xs transition-all",
           tone === "fail" && "border-fail/40 bg-fail/10 text-fail", tone === "pass" && "border-pass/40 bg-pass/10 text-pass", tone === "idle" && "border-border text-muted-foreground")}>
           {attack.id}{score ? ` ${score.succeeded}/${score.runs}` : running ? " …" : ""}{afterScore && <span className="text-muted-foreground"> → {afterScore.succeeded}</span>}
-        </Link>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs"><p className="font-medium">{attack.name}</p><p className="text-xs text-muted-foreground">{attack.owasp ?? "reliability"} · {attack.description.slice(0, 160)}</p></TooltipContent>
     </Tooltip>

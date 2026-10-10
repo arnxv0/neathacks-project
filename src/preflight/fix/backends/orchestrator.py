@@ -43,6 +43,6 @@ class OrchestratorFixer(ClaudeCodeFixer):
             time.sleep(5)
         head = _git(["rev-parse", "HEAD"], h.worktree)
         base = _git(["merge-base", "HEAD", "main"], h.worktree)
-        if head == base and not _git(["status", "--porcelain"], h.worktree):
+        if head == base and not _git(["status", "--porcelain", "-uno"], h.worktree):
             return FixResult(ok=False, error="ao session finished without changes")
         return self._collect(h)
