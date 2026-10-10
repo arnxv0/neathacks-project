@@ -1,5 +1,6 @@
-import os
-os.environ.setdefault("ACMESALES_DB", "/tmp/acmesales-test.db")
+import os, tempfile
+os.environ["ACMESALES_DB"] = os.path.join(tempfile.mkdtemp(prefix="acmesales-test-"), "test.db")
+os.environ["ACMESALES_MIRROR_DIR"] = os.path.join(tempfile.mkdtemp(prefix="acmesales-mirror-"), "mirror")
 from app.seed_db import seed
 from app.tools import crm, billing, email
 from app.tools.crustdata import format_record

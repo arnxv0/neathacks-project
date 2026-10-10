@@ -1,5 +1,6 @@
-import os
-os.environ.setdefault("ACMESALES_DB", "/tmp/acmesales-test.db")
+import os, tempfile
+os.environ["ACMESALES_DB"] = os.path.join(tempfile.mkdtemp(prefix="acmesales-test-"), "test.db")
+os.environ["ACMESALES_MIRROR_DIR"] = os.path.join(tempfile.mkdtemp(prefix="acmesales-mirror-"), "mirror")
 from fastapi.testclient import TestClient
 from app.main import app
 from app.seed_db import seed
