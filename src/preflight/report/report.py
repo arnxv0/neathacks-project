@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections, datetime as dt, json
 from rich.console import Console
 from rich.table import Table
+from .. import config
 from ..ledger import Ledger
 from ..models import AttackSpec, RunRecord
 
@@ -48,5 +49,10 @@ def write(ledger: Ledger, specs: dict[str, AttackSpec], extra: dict | None = Non
               "fixes": [a.model_dump() for c in ledger.clusters() for a in ledger.attempts(c.cluster_id)],
               "cost": {"target_usd": sum(r.usd for r in runs), "preflight_llm_usd": ledger.manifest().get("preflight_llm_usd", 0.0)},
               **(extra or {})}
+    from . import cost_report
+    report["cost_report"] = cost_report.write(ledger)
     (ledger.root / "report" / "report.json").write_text(json.dumps(report, indent=2, default=str))
+    import shutil
+    (config.OUT_DIR).mkdir(exist_ok=True)
+    shutil.copy(ledger.root / "report" / "report.json", config.OUT_DIR / "report.json")
     return report
