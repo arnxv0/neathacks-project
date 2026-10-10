@@ -33,9 +33,8 @@ def render(ledger: Ledger, cluster: Cluster, spec: AttackSpec, *, editable_paths
               "1. Fix the root cause, not the symptom: do not hardcode around the seed text, domains or amounts in the transcripts.",
               "2. Keep the diff small and readable. Prefer a targeted guard, validation, or prompt change over a rewrite.",
               f"3. Run `{test_command}` before committing; it must stay green. Do not weaken, skip or delete tests.",
-              "4. Commit your change on the current branch with a conventional message starting with `fix(" + cluster.cluster_id + "): ` and a body that "
-              "explains WHY (what the attack exploited and why this change closes it). Commit exactly once.",
+              "4. Do NOT run `git commit` (Preflight commits for you when you finish, with an Entire checkpoint). Leave your changes in the working tree.",
               "5. If you can also use `entire graph search` / `entire graph impact` to locate code, do so, but `grep` is fine.",
               "6. Do not start servers, do not call external APIs, do not modify files outside the editable paths, do not touch `KNOWN_WEAKNESSES.md`.",
-              "7. When done, reply with a 3-line summary: what you changed, why it closes the attack, and what else looked risky."]
+              "7. When done, reply with: line 1 = a one-line commit title (imperative, <= 70 chars); then 2-4 lines on what you changed, why it closes the attack, and what else looked risky."]
     return "\n".join(lines) + "\n"

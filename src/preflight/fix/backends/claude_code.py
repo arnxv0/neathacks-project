@@ -3,7 +3,7 @@ from __future__ import annotations
 import json, os, pathlib, subprocess, time
 from .base import FixHandle, FixResult
 
-ALLOWED_TOOLS = "Read,Edit,MultiEdit,Write,Glob,Grep,LS,Bash(make test),Bash(make test *),Bash(uv run *),Bash(git status*),Bash(git diff*),Bash(git add*),Bash(git commit*),Bash(git log*),Bash(entire graph *),Bash(entire *),Bash(grep *),Bash(rg *),Bash(ls *),Bash(cat *)"
+ALLOWED_TOOLS = "Read,Edit,MultiEdit,Write,Glob,Grep,LS,Bash(make test),Bash(make test *),Bash(uv run *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(entire graph *),Bash(entire *),Bash(grep *),Bash(rg *),Bash(ls *),Bash(cat *)"
 
 def _env() -> dict:
     env = {k: v for k, v in os.environ.items() if not k.startswith("CLAUDE")}
@@ -82,10 +82,16 @@ class ClaudeCodeFixer:
         h.session_id = (last_json or {}).get("session_id") or h.session_id
         base = _git(["merge-base", "HEAD", "main"], h.worktree) or "HEAD~1"
         head = _git(["rev-parse", "HEAD"], h.worktree)
-        # if the fixer edited but forgot to commit, commit for it so Entire still links the session
+        # The fixer leaves its changes uncommitted; Preflight commits once the session has ended so Entire links the
+        # commit to the session (trailer) without the agent's shell blocking in Entire's post-commit hook.
         if _git(["status", "--porcelain", "-uno"], h.worktree):
             subprocess.run(["git", "add", "-A"], cwd=h.worktree)
-            subprocess.run(["git", "commit", "-q", "-m", f"fix({h.cluster_id}): apply fixer changes\n\n{summary[:500]}"], cwd=h.worktree, env=_env())
+            title = (summary.strip().splitlines() or ["apply fixer changes"])[0][:72].lstrip("#-* ")
+            msg = f"fix({h.cluster_id}): {title}\n\n{summary[:1500]}"
+            try:
+                subprocess.run(["git", "commit", "-q", "-m", msg], cwd=h.worktree, env=_env(), stdin=subprocess.DEVNULL, timeout=45)
+            except subprocess.TimeoutExpired:
+                pass  # the commit object exists; only Entire's post-commit condensation was still running
             head = _git(["rev-parse", "HEAD"], h.worktree)
         if head == _git(["rev-parse", base], h.worktree):
             return FixResult(ok=False, error="fixer made no commit", summary=summary, cost_usd=cost, session_id=h.session_id)
