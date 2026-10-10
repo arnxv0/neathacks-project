@@ -20,6 +20,9 @@ def render(ledger: Ledger, cluster: Cluster, spec: AttackSpec, *, editable_paths
              *[f"- Failing transcript: `{t}`" for t in transcripts], "",
              "## Where to look", "", *(f"- suspected: `{p}`" for p in cluster.suspected_paths), *sources, "",
              f"You may only change files under: {', '.join(f'`{p}`' for p in editable_paths)}.", ""]
+    graph_md = cdir / "graph.md"
+    if graph_md.exists():
+        lines += ["## Code map from entire-graph (blast radius of the suspected code)", "", f"See `{graph_md}`. Summary:", "", graph_md.read_text()[:2500], ""]
     if checkpoint_context:
         lines += ["## Earlier reasoning about these files (Entire checkpoints)", "", checkpoint_context, ""]
     if replay_failure:

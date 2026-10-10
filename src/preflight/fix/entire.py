@@ -74,3 +74,38 @@ def blame(repo: pathlib.Path, file: str, line: int) -> str:
         return ""
     r = _run(["blame", file, "--line", str(line), "--no-pager"], repo)
     return (r.stdout or r.stderr).strip()
+
+
+def graph_available(repo: pathlib.Path) -> bool:
+    if not available():
+        return False
+    r = _run(["graph", "version"], repo, timeout=30)
+    return r.returncode == 0
+
+def graph_impact(repo: pathlib.Path, symbol: str) -> str:
+    """entire-graph blast radius for a symbol (callers, data flows, co-change coupling)."""
+    if not graph_available(repo):
+        return ""
+    r = _run(["graph", "impact", "--repo", ".", "--symbol", symbol, "--format", "text", "--limit", "8"], repo, timeout=120)
+    return (r.stdout or "").strip() if r.returncode == 0 else ""
+
+def graph_search(repo: pathlib.Path, query: str, top_k: int = 3) -> str:
+    if not graph_available(repo):
+        return ""
+    r = _run(["graph", "search", "--repo", ".", "--query", query, "--top-k", str(top_k), "--format", "text", "--max-context-bytes", "6000"], repo, timeout=120)
+    return (r.stdout or "").strip() if r.returncode == 0 else ""
+
+def graph_context(repo: pathlib.Path, suspected_paths: list[str], hypothesis: str) -> str:
+    """Markdown block for briefs/dashboard: impact per suspected symbol + a semantic search for the hypothesis."""
+    parts = []
+    for p in suspected_paths[:3]:
+        sym = p.split(":")[1] if ":" in p else None
+        if sym:
+            out = graph_impact(repo, sym)
+            if out:
+                parts.append(f"### impact: `{sym}`\n```\n{out[:1800]}\n```")
+    if hypothesis:
+        out = graph_search(repo, hypothesis[:200])
+        if out:
+            parts.append(f"### search: where this behaviour lives\n```\n{out[:2200]}\n```")
+    return "\n\n".join(parts)

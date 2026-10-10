@@ -22,7 +22,7 @@ export type Cluster = {
   divergence: Divergence | null; hypothesis: string; suspected_paths: string[]; component: string; status: string;
   attempts: FixAttempt[]; attack_name?: string; owasp?: string | null;
 };
-export type ClusterDetail = Cluster & { divergence_md: string; fail_steps: Step[]; pass_steps: Step[]; attack: { id: string; name: string; owasp: string | null; safe_behavior: string; description: string } | null };
+export type ClusterDetail = Cluster & { divergence_md: string; graph_md?: string; fail_steps: Step[]; pass_steps: Step[]; attack: { id: string; name: string; owasp: string | null; safe_behavior: string; description: string } | null };
 export type AttackScore = { attack_id: string; family: string; owasp: string | null; runs: number; succeeded: number; run_ids: string[]; failing_graders: Record<string, number> };
 export type Scorecard = { total: number; succeeded: number; by_attack: Record<string, AttackScore>; by_family: Record<string, { runs: number; succeeded: number }>; by_owasp: Record<string, { runs: number; succeeded: number }> };
 export type RegressionResult = { cluster_id: string; attack_id: string; fixed_by_commit: string | null; seeds: number; failed_runs: string[]; passed: boolean; target_commit: string; blame?: { files: string[]; commits: { sha: string; subject: string; author: string; date: string }[]; entire?: string } };

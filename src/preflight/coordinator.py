@@ -209,6 +209,14 @@ class Coordinator:
                 hyp, paths = f"(analyst unavailable: {e})", [m.get("source") for m in tools_meta.values() if m.get("source")][:2]
             c.hypothesis, c.suspected_paths = hyp, [p for p in paths if p]
             self.ledger.write_cluster(c, divergence_md=md)
+            try:
+                from .fix import entire as entiremod
+                g = entiremod.graph_context(self.spec.components[c.component].repo_path, c.suspected_paths, hyp)
+                if g:
+                    (self.ledger.root / "clusters" / c.cluster_id / "graph.md").write_text("# entire-graph context\n\n" + g + "\n")
+                    self.emit("graph.ready", cluster_id=c.cluster_id)
+            except Exception as e:
+                console.print(f"[yellow]entire-graph skipped: {e}")
             self.emit("divergence.ready", cluster_id=c.cluster_id, step_index=div.step_index, mode=div.mode, trace_links=div.trace_links, hypothesis=hyp)
             console.print(f"[magenta]{c.cluster_id}[/] step {div.step_index} ({div.mode}): {hyp}")
         clusters = self._merge_clusters(clusters)

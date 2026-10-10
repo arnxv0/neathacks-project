@@ -82,6 +82,7 @@ def cluster_detail(aid: str, cluster_id: str) -> dict:
     cdir = led.root / "clusters" / cluster_id
     out = c.model_dump()
     out["divergence_md"] = (cdir / "divergence.md").read_text() if (cdir / "divergence.md").exists() else ""
+    out["graph_md"] = (cdir / "graph.md").read_text() if (cdir / "graph.md").exists() else ""
     out["attempts"] = []
     for a in led.attempts(cluster_id):
         ad = a.model_dump()

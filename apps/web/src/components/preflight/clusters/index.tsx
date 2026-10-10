@@ -95,6 +95,7 @@ export function HypothesisCard({ c }: { c: ClusterDetail }) {
         <p className="text-sm leading-relaxed">{c.hypothesis || "…"}</p>
         {c.suspected_paths.length > 0 && <div className="flex flex-wrap gap-2">{c.suspected_paths.map((p) => <Mono key={p} className="rounded bg-muted px-2 py-0.5 text-checkpoint"><GitBranch className="inline size-3 mr-1" />{p}</Mono>)}</div>}
         {c.attack && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">safe behavior the fix must reach</summary><p className="mt-2">{c.attack.safe_behavior}</p></details>}
+        {c.graph_md && <details className="text-xs" open><summary className="cursor-pointer text-checkpoint">entire-graph: blast radius of the suspected code</summary><Markdown text={c.graph_md} className="mt-2" /></details>}
       </CardContent>
     </Card>
   );
