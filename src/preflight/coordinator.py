@@ -395,8 +395,10 @@ class Coordinator:
         clusters = [c for c in self.ledger.clusters() if c.status in ("open", "fixing", "replaying")]
         if not clusters:
             console.print("nothing to resume; clusters are all resolved or awaiting approval"); self._maybe_finish(); return
-        self.fix(clusters, resume=True)
-        self.report()
+        out = self.fix(clusters, resume=True)
+        self.report(set_state=False)
+        if not any(c.status == "await_approval" for c in out):
+            self._maybe_finish()
 
     def _maybe_finish(self) -> None:
         open_ = [c for c in self.ledger.clusters() if c.status in ("open", "fixing", "replaying", "await_approval")]
@@ -480,8 +482,9 @@ class Coordinator:
         (self.ledger.root / "report" / "regressions.json").write_text(json.dumps(results, indent=2, default=str))
         return results
 
-    def report(self, extra: dict | None = None) -> dict:
-        self.state("REPORT")
+    def report(self, extra: dict | None = None, set_state: bool = True) -> dict:
+        if set_state:
+            self.state("REPORT")
         rep = reportmod.write(self.ledger, self.specs, extra)
         reportmod.print_scorecard(rep["scorecard"], title=f"Assessment {self.ledger.assessment_id}")
         console.print(f"target spend ${rep['cost']['target_usd']:.4f}  preflight LLM spend ${rep['cost']['preflight_llm_usd']:.4f}  "
@@ -501,7 +504,8 @@ class Coordinator:
         except (BudgetExceeded, Stopped) as e:
             self.emit("stopped", reason=str(e)); console.print(f"[red]stopped: {e}")
             rep = self.report(); self.state("STOPPED"); return rep
-        rep = self.report()
+        awaiting = any(c.status == "await_approval" for c in clusters)
+        rep = self.report(set_state=not awaiting)
         if self.no_fix or not clusters or all(c.status in ("merged", "rejected", "needs_human") for c in clusters):
             self.state("DONE")
         return rep
