@@ -5,6 +5,15 @@ export type ExplainerProps = {
   regressionCommit: string;
 };
 export const defaultProps: ExplainerProps = {
-  before: 11, after: 1, total: 20, clusters: 4, fixes: 4, replayBefore: "0/3", replayAfter: "6/6",
-  costPerRun: 0.012, costPerAssessment: 2.94, repoUrl: "github.com/arnxv0/neathacks-project", regressionCommit: "a1b2c3d",
+  "before": 8,
+  "after": 0,
+  "total": 20,
+  "clusters": 3,
+  "fixes": 0,
+  "replayBefore": "0/3",
+  "replayAfter": "6/6",
+  "costPerRun": 0.00507,
+  "costPerAssessment": 0.1149,
+  "repoUrl": "github.com/arnxv0/neathacks-project",
+  "regressionCommit": "a1b2c3d"
 };

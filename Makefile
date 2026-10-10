@@ -64,3 +64,7 @@ clean-ledger:
 regress-demo:     ## reintroduce the D1 weakness in the target with a plausible refactor commit, then run the regression suite
 	./scripts/regress-demo.sh $(TARGET)
 	uv run preflight regress $(TARGET) || true
+
+video:            ## render the explainer with measured numbers from out/report.json
+	python3 scripts/video-props.py
+	cd apps/video && npx remotion render PreflightExplainer out/preflight-explainer.mp4 --browser-executable="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
