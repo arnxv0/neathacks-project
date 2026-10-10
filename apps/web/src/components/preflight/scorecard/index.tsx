@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { NumberTicker } from "@/components/ui/number-ticker";
 import { Spotlight } from "@/components/ui/spotlight";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -9,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { FAMILIES } from "@/lib/format";
 import type { AttackInfo, Run, Scorecard } from "@/lib/api/types";
 import { Tone } from "../shared";
+import { Ticker } from "../shared/Ticker";
 
 export function ScorecardHero({ sc, after, running }: { sc: Scorecard; after: Scorecard | null; running: boolean }) {
   return (
@@ -18,7 +18,7 @@ export function ScorecardHero({ sc, after, running }: { sc: Scorecard; after: Sc
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">attacks that succeeded</p>
           <div className="flex items-baseline gap-3 mt-1">
-            <NumberTicker value={sc.succeeded} className={cn("text-6xl font-semibold tracking-tighter", sc.succeeded ? "text-fail" : "text-pass")} />
+            <Ticker value={sc.succeeded} className={cn("text-6xl font-semibold tracking-tighter", sc.succeeded ? "text-fail" : "text-pass")} />
             <span className="text-3xl text-muted-foreground">/ {sc.total}</span>
             {running && <span className="ml-2 text-xs text-primary animate-pulse">live</span>}
           </div>
@@ -30,7 +30,7 @@ export function ScorecardHero({ sc, after, running }: { sc: Scorecard; after: Sc
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">after fixes</p>
               <div className="flex items-baseline gap-3 mt-1">
-                <NumberTicker value={after.succeeded} startValue={sc.succeeded} direction="down" className={cn("text-6xl font-semibold tracking-tighter", after.succeeded ? "text-pending" : "text-pass")} />
+                <Ticker value={after.succeeded} className={cn("text-6xl font-semibold tracking-tighter", after.succeeded ? "text-pending" : "text-pass")} />
                 <span className="text-3xl text-muted-foreground">/ {after.total}</span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">same seeds, merged main</p>

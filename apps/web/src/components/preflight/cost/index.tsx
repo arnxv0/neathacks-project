@@ -1,7 +1,7 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { NumberTicker } from "@/components/ui/number-ticker";
+import { Ticker } from "../shared/Ticker";
 import type { Summary } from "@/lib/api/types";
 import { money } from "@/lib/format";
 import { Mono } from "../shared";
@@ -24,7 +24,7 @@ export function CostPanel({ s }: { s: Summary }) {
         {tiles.map((t) => (
           <Card key={t.label} className="border-border/60"><CardContent className="p-5">
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t.label}</p>
-            <p className="text-4xl font-semibold tracking-tight mt-1">$<NumberTicker value={t.value} decimalPlaces={t.value < 1 ? 4 : 2} /></p>
+            <p className="text-4xl font-semibold tracking-tight mt-1">$<Ticker value={t.value} decimals={t.value < 1 ? 4 : 2} /></p>
             <p className="text-xs text-muted-foreground mt-1">{t.hint}</p>
           </CardContent></Card>
         ))}
