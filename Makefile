@@ -71,3 +71,6 @@ video:            ## render the explainer with measured numbers from out/report.
 
 demo-reset:       ## reset the target to v0-unfixed and clear regressions + ledger before recording
 	./scripts/demo-reset.sh $(TARGET)
+
+demo-video:       ## record the dashboard with Playwright and render the captioned product demo
+	cd apps/video && node scripts/record-dashboard.mjs && for f in public/clips/*.webm; do ffmpeg -y -loglevel error -i "$$f" -c:v libx264 -pix_fmt yuv420p -r 30 -crf 20 -movflags +faststart "$${f%.webm}.mp4" && rm "$$f"; done && npx remotion render PreflightProductDemo out/preflight-product-demo.mp4 --browser-executable="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" && cp out/preflight-product-demo.mp4 ../../docs/videos/

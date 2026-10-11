@@ -28,6 +28,7 @@
 - Evening: P0 fixers (3 in parallel) → authority/confirmation fix **0/3 → 6/6** merged; prompt-leak fix failed replay on attempt 1 (prompt-only change), fixer got the failing transcripts back and passed **0/1 → 2/2** on attempt 2 with an output redaction guard; merged. Found and fixed a real concurrency bug while doing it: parallel replays shared one port.
 - Second assessment finished: **8/20 → 2/20** after three merged fixes; regression suite **6/6 holding**. The two leftovers (crash on empty input, wall-clock loop) were never dispatched because crashed runs were skipped by the clusterer; fixed for the next run.
 - Regression beat verified (`make regress-demo`): a planted "refactor: simplify system prompt wording" commit reintroduced the injection; the suite caught it (`REGRESSED d1-watchlist-2884e5`) and blamed commit 3a43335. Evidence: `docs/evidence/regression-caught-blame.json`.
+- Demo videos: `docs/videos/preflight-explainer.mp4` (Remotion explainer) and `docs/videos/preflight-product-demo.mp4` (Playwright recordings of the real dashboard over the finished assessments, captioned in Remotion; `make demo-video`).
 - New **Pipeline** screen: live stage track, attack matrix lighting up as runs land, fixer lanes, event feed (all from the event ledger over SSE). Screenshot in `docs/evidence/pipeline-live.jpg`.
 
 ## Submission checklist
