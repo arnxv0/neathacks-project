@@ -34,6 +34,8 @@ make target-checkout          # splits the subtree -> ../acmesales-copilot (own 
 ```
 After a run, `make target-sync` pulls the fixer commits and merges from `../acmesales-copilot` back into `targets/acmesales-copilot/` so the public history shows them.
 
+`make` is optional everywhere: every recipe is a one-line `uv run ...`, `npm ...` or `docker compose ...` command you can type directly (see `Makefile`). On Windows use Docker Compose (`docker compose up -d --build`) or the plain commands in PowerShell; the target boots with `uv run python -m app` and tests with `uv run pytest -q`, no make involved.
+
 ## 2. Install
 
 ```bash

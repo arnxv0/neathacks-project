@@ -129,6 +129,8 @@ def _reap_stalled_entire_hooks(max_age_s: int = 90) -> None:
     (~10 min), the git post-commit hook (`git update-ref --stdin` never returns, which then blocks the next session's
     session-start hook on Entire's ref locks). The transcript/commit is already saved by then; killing the stalled hook lets
     `claude -p` exit and the next fixer start. Returns nothing; failures are ignored."""
+    if sys.platform == "win32":   # Entire hooks are a POSIX problem; nothing to reap
+        return
     try:
         out = subprocess.run(["ps", "-ax", "-o", "pid=,etime=,command="], capture_output=True, text=True).stdout
     except Exception:

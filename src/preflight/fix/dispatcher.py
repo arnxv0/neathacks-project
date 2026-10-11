@@ -55,7 +55,8 @@ def start_attempt(ledger: Ledger, cluster: Cluster, spec: AttackSpec, system: Sy
     handle = fixer.start(brief_path, repo, attempt.branch, worktrees_dir(repo) / cluster.cluster_id, fdir / "fixer.log")
     return attempt, handle
 
-def finish_attempt(ledger: Ledger, attempt: FixAttempt, handle: FixHandle, res: FixResult, repo: pathlib.Path) -> FixAttempt:
+def finish_attempt(ledger: Ledger, attempt: FixAttempt, handle: FixHandle, res: FixResult, repo: pathlib.Path,
+                   test_command: str = "uv run pytest -q") -> FixAttempt:
     fdir = ledger.fix_dir(attempt.cluster_id, attempt.n)
     attempt.cost_usd = res.cost_usd; attempt.fixer_session_id = res.session_id; attempt.summary = res.summary
     if not res.ok:
@@ -72,7 +73,8 @@ def finish_attempt(ledger: Ledger, attempt: FixAttempt, handle: FixHandle, res: 
     if text:
         (fdir / "checkpoint.md").write_text(text); attempt.checkpoint_summary = text[:1500]
     # tests
-    comp_test = subprocess.run(["make", "test"], cwd=handle.worktree, capture_output=True, text=True, timeout=600)
+    # the component's own `test_command` from preflight.yaml, run through the shell so it works the same on macOS, Linux and Windows
+    comp_test = subprocess.run(test_command, shell=True, cwd=handle.worktree, capture_output=True, text=True, timeout=600)
     attempt.tests_green = comp_test.returncode == 0
     (fdir / "tests.log").write_text(comp_test.stdout[-4000:] + comp_test.stderr[-2000:])
     attempt.status = "replaying"

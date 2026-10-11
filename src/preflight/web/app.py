@@ -161,7 +161,7 @@ def _replay_human(aid: str, cluster_id: str) -> None:
     diff = sp.run(["git", "diff", "main..HEAD"], cwd=wt, capture_output=True, text=True).stdout
     fdir = c.ledger.fix_dir(cluster_id, n); (fdir / "diff.patch").write_text(diff)
     a = FixAttempt(cluster_id=cluster_id, n=n, author="human", branch=dispatcher.branch_for(cluster_id), commit=head, diff_path=str(fdir / "diff.patch"), status="replaying")
-    tests = sp.run(["make", "test"], cwd=wt, capture_output=True, text=True); a.tests_green = tests.returncode == 0
+    tests = sp.run(comp.test_command, shell=True, cwd=wt, capture_output=True, text=True); a.tests_green = tests.returncode == 0
     c.ledger.write_attempt(a)
     rep = replaymod.replay_cluster(c.ledger, cluster, c.spec, wt, c.mcfg.replay_k, specs=c.specs, seed_of=c.seed_of, guard=c.guard, **c._grading_kw())
     a.replay = rep; a.status = "passed" if rep.passed == rep.total and a.tests_green else "failed"; c.ledger.write_attempt(a)

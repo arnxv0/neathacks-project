@@ -278,7 +278,7 @@ class Coordinator:
                     res = self.fixer.send(handle, self.ledger.fix_dir(cluster.cluster_id, n) / "message.md", timeout_s=900)
                 else:
                     res = self.fixer.wait(handle, timeout_s=900)
-            attempt = dispatcher.finish_attempt(self.ledger, attempt, handle, res, comp.repo_path)
+            attempt = dispatcher.finish_attempt(self.ledger, attempt, handle, res, comp.repo_path, test_command=comp.test_command)
             self.emit("fix.attempt.done", cluster_id=cluster.cluster_id, attempt=n, ok=res.ok, commit=attempt.commit,
                       checkpoint=attempt.entire_checkpoint_id, tests_green=attempt.tests_green, cost_usd=attempt.cost_usd, error=res.error)
             if not res.ok:
