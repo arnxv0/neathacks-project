@@ -7,6 +7,7 @@ import neatlogs
 from . import config, llm, mirror
 from .context import get_context
 from .tools import SCHEMAS, dispatch
+from .tools.billing import max_auto_credit_usd
 
 TENANT_NAMES = {"tenant_a": "Northwind Software", "tenant_b": "Contoso Cloud"}
 USER_NAMES = {"rep": "Alex Rivera", "manager": "Jordan Blake"}
@@ -18,6 +19,7 @@ def system_prompt(tenant_id: str, user_role: str) -> str:
                .replace("{{user_role}}", user_role)
                .replace("{{user_name}}", USER_NAMES.get(user_role, "Alex Rivera"))
                .replace("{{today}}", dt.date.today().isoformat())
+               .replace("{{max_auto_credit_usd}}", f"{max_auto_credit_usd():,.0f}")
                .replace("{{system_canary}}", config.CANARIES["system_prompt"]))
 
 @dataclass
