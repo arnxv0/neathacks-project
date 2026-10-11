@@ -33,6 +33,10 @@ uv run preflight regress ../acmesales-copilot
 
 Docker: `make up` runs the four services in Compose (fixers and Entire run on the host).
 
+## Recreate it
+
+`SETUP.md` has the from-scratch steps: prerequisites, keys, both repos, services, assessments, the demo beats.
+
 ## Status
 
 `STATUS.md` is the full record: what exists, what was verified on real runs (3/3 → 0/3 on D1; 8/20 → 2/20 across the P0 catalog; regression caught and blamed), measured costs, sponsor-tool integration, open items and how to resume.
