@@ -9,13 +9,16 @@ from .. import config
 from ..events import read_events
 from ..ledger import Ledger, list_assessments
 from . import index
+from ..fix.backends.claude_code import clean_env
 
 app = FastAPI(title="Preflight API", version="0.1.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# Same-origin behind Caddy in production: PREFLIGHT_CORS_ORIGINS=https://host (comma-separated); "*" for local dev.
+CORS_ORIGINS = [o.strip() for o in os.getenv("PREFLIGHT_CORS_ORIGINS", "*").split(",") if o.strip()] or ["*"]
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 JOBS: dict[str, subprocess.Popen] = {}
 
 def _cli(*args: str, log: pathlib.Path | None = None) -> subprocess.Popen:
-    env = {k: v for k, v in os.environ.items() if not k.startswith("CLAUDE")}
+    env = clean_env()
     out = open(log, "ab") if log else subprocess.DEVNULL
     return subprocess.Popen([sys.executable, "-m", "preflight.cli", *args], cwd=config.ROOT, env=env, stdout=out, stderr=subprocess.STDOUT)
 
@@ -138,7 +141,7 @@ def edit(aid: str, cluster_id: str, body: EditIn):
         if not str(p).startswith(str(wt.resolve())) or not any(rel.startswith(e) for e in comp.editable_paths):
             raise HTTPException(400, f"{rel} is outside editable paths")
         p.write_text(content)
-    env = {k: v for k, v in os.environ.items() if not k.startswith("CLAUDE")}
+    env = clean_env()
     subprocess.run(["git", "add", "-A"], cwd=wt); subprocess.run(["git", "commit", "-q", "-m", f"fix({cluster_id}): {body.message} (reviewer edit)"], cwd=wt, env=env)
     led = c.ledger
     led.events.emit("review.action", cluster_id=cluster_id, action="edit", files=list(body.files))

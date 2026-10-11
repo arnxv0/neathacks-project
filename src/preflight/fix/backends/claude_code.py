@@ -5,10 +5,20 @@ from .base import FixHandle, FixResult
 
 ALLOWED_TOOLS = "Read,Edit,MultiEdit,Write,Glob,Grep,LS,Bash(make test),Bash(make test *),Bash(uv run *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(entire graph *),Bash(entire *),Bash(grep *),Bash(rg *),Bash(ls *),Bash(cat *)"
 
-def _env() -> dict:
-    env = {k: v for k, v in os.environ.items() if not k.startswith("CLAUDE")}
+# `claude -p` must not inherit a parent Claude Code session's CLAUDE* variables (CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, ...)
+# or it refuses to start a nested session. The one exception is the long-lived OAuth token from `claude setup-token`,
+# which is how a headless host (no interactive login) authenticates the fixers against a Max subscription.
+KEEP_CLAUDE_VARS = frozenset({"CLAUDE_CODE_OAUTH_TOKEN"})
+
+def clean_env(base: dict | None = None) -> dict:
+    """Environment for spawning `claude`/fixer subprocesses: CLAUDE* stripped except KEEP_CLAUDE_VARS,
+    `~/.local/bin` (uv, claude, entire) first on PATH."""
+    src = os.environ if base is None else base
+    env = {k: v for k, v in src.items() if not k.startswith("CLAUDE") or k in KEEP_CLAUDE_VARS}
     env["PATH"] = f"{pathlib.Path.home() / '.local' / 'bin'}:{env.get('PATH', '')}"
     return env
+
+_env = clean_env
 
 def _git(args: list[str], cwd: pathlib.Path) -> str:
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True).stdout.strip()

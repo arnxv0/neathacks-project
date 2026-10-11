@@ -72,11 +72,11 @@ def init(target_dir: pathlib.Path):
     console.print_json(json.dumps(man, default=str))
 
 @app.command()
-def proxy(port: int = 8300):
-    """Run the chaos proxy in the foreground."""
+def proxy(port: int = 8300, host: str = "127.0.0.1"):
+    """Run the chaos proxy in the foreground (loopback by default; --host 0.0.0.0 inside Docker)."""
     import uvicorn
     from .chaos.proxy import app as proxy_app
-    uvicorn.run(proxy_app, host="0.0.0.0", port=port)
+    uvicorn.run(proxy_app, host=host, port=port)
 
 @app.command()
 def stop():
