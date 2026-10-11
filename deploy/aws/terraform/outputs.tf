@@ -17,3 +17,7 @@ output "bootstrap_log" {
   description = "Follow the bootstrap on the box (takes ~10 min: installers, uv sync x2, npm ci + next build)."
   value       = "ssh ubuntu@${aws_eip.preflight.public_ip} sudo tail -f /var/log/preflight-bootstrap.log"
 }
+
+output "instance_id" {
+  value = aws_instance.preflight.id
+}

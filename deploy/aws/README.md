@@ -126,3 +126,16 @@ Removes the instance, disk, security group, IAM role/profile, key pair and relea
 (free); delete them with `aws ssm delete-parameters --names $(aws ssm get-parameters-by-path --path /preflight --query 'Parameters[].Name' --output text)`
 when the token should no longer exist anywhere, and revoke the OAuth token in Claude settings.
 To pause instead of destroy: `aws ec2 stop-instances --instance-ids <id>` (≈ $8.50/month for disk + IPv4).
+
+## Administration without SSH (Systems Manager)
+
+The instance role includes `AmazonSSMManagedInstanceCore`, so no inbound port is needed to operate the box. This matters when the operator's network rotates its public IP and the `admin_cidr` SSH rule stops matching.
+
+```bash
+ID=$(terraform -chdir=deploy/aws/terraform output -raw instance_id 2>/dev/null || aws ec2 describe-instances --filters Name=tag:Name,Values=preflight* --query 'Reservations[0].Instances[0].InstanceId' --output text)
+aws ssm start-session --target "$ID"                      # interactive shell (needs the session-manager plugin)
+aws ssm send-command --instance-ids "$ID" --document-name AWS-RunShellScript \
+  --parameters 'commands=["sudo -iu preflight bash -lc \"cd /srv/preflight && git pull --ff-only\"","systemctl restart preflight-api preflight-web"]'
+```
+
+Editing `bootstrap.sh.tftpl` never rebuilds a running host (`ignore_changes = [user_data, ami]`); it applies to new instances only. Docker is installed for sandbox targets (`docs/SANDBOX_TARGETS.md`).

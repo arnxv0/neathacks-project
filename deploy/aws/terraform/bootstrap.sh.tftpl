@@ -25,7 +25,7 @@ as_pf() { sudo -u "$PF_USER" -H env HOME="$PF_HOME" PATH="$PF_HOME/.local/bin:/u
 
 # ---------------------------------------------------------------- 1. packages (git 2.43 arm64: no Rosetta deadlock)
 apt-get update -y
-apt-get install -y git curl build-essential ca-certificates gnupg unzip jq python3 debian-keyring debian-archive-keyring apt-transport-https
+apt-get install -y git curl build-essential ca-certificates gnupg unzip jq python3 debian-keyring debian-archive-keyring apt-transport-https docker.io
 if ! command -v caddy >/dev/null; then
   # Official Caddy repo: Ubuntu's own caddy (2.6) predates the `basic_auth` directive used in our Caddyfile.
   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
@@ -140,6 +140,8 @@ umask 022
 # ---------------------------------------------------------------- 10. sizing: fixers in parallel
 sed -i -E "s/max_parallel: [0-9]+/max_parallel: $FIXERS_MAX_PARALLEL/" $PF_REPO/config.yaml
 grep -n max_parallel $PF_REPO/config.yaml
+
+usermod -aG docker preflight && systemctl enable --now docker   # sandbox targets run in containers
 
 # ---------------------------------------------------------------- 11. dashboard production build (API origin baked in)
 as_pf "cd $PF_REPO/apps/web && npm ci --no-audit --no-fund && NEXT_PUBLIC_API_URL=https://$HOST NODE_OPTIONS=--max-old-space-size=3072 npm run build"
