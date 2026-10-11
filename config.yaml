@@ -7,8 +7,8 @@ guard:
   run_timeout_s: 120
   assessment_timeout_s: 1500
 models:
-  cheap:  [nova-micro, claude-haiku, nova-lite]
-  strong: [claude-sonnet-4.6, claude-haiku]
+  cheap:  [nova-micro, claude-haiku, nova-lite, gpt-4o-mini, gpt-4.1-mini]
+  strong: [claude-sonnet-4.6, claude-haiku, gpt-4.1, gpt-4o]
   prices_per_1m:   # input, output USD
     claude-haiku: [1.0, 5.0]
     claude-sonnet-4.6: [3.0, 15.0]
