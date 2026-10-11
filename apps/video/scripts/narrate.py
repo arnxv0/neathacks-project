@@ -1,3 +1,8 @@
+# Narration via Kokoro (local neural TTS, Apache-2.0). Setup once:
+#   uv venv .venv -p 3.12 && . .venv/bin/activate && uv pip install kokoro-onnx soundfile
+#   download kokoro-v1.0.onnx + voices-v1.0.bin from github.com/thewh1teagle/kokoro-onnx/releases (run from that directory)
+#   brew install espeak-ng && export ESPEAK_DATA_PATH=/opt/homebrew/share/espeak-ng-data PHONEMIZER_ESPEAK_LIBRARY=/opt/homebrew/lib/libespeak-ng.dylib
+# Usage: python narrate.py [voice]   (af_heart default; am_michael, bf_emma, bm_george, af_bella also good)
 import json, sys, soundfile as sf, numpy as np
 from kokoro_onnx import Kokoro
 k = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
