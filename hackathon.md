@@ -35,6 +35,14 @@ Target reset to `v0-unfixed`; `preflight run --mode full` (20 attacks, 50 seeds,
 - Demo videos: `docs/videos/preflight-explainer.mp4` (Remotion explainer) and `docs/videos/preflight-product-demo.mp4` (Playwright recordings of the real dashboard over the finished assessments, captioned in Remotion; `make demo-video`).
 - New **Pipeline** screen: live stage track, attack matrix lighting up as runs land, fixer lanes, event feed (all from the event ledger over SSE). Screenshot in `docs/evidence/pipeline-live.jpg`.
 
+
+### Task list (2026-10-11, while the owner is away)
+- [x] Second fix pass on the residual D1/G3 failures (ledger `20261011-030231-050e`): D1 watchlist 0/2 → 10/10, G3 0/1 → 5/5, approved and merged; regression suite + after-pass re-run.
+- [ ] Second target model: full catalog, find-only, against the fixed main on `gpt-4.1-mini` (OpenAI) — running.
+- [ ] cfo.ai: board table renders placeholders after the restructure — diagnosing through the MCP; MCP update clip with the verification run's measured cost.
+- [ ] **Video narration and script v2**: lead with impact and answer the judges' likely questions (does it generalise? is it luck? what did it cost? what broke? what would you do next?), one claim per scene backed by an on-screen number; synthesize clause by clause with explicit pauses (250 ms at commas, 500 ms at sentence ends) so the voice stops rushing through commas; re-render both videos.
+- [ ] Refresh README/STATUS numbers after the runs; re-record dashboard clips if the headline numbers move.
+
 ## Submission checklist
 - [ ] **Public repo** with hackathon-dated commits — one repo, target vendored under `targets/`. Owner: `gh repo edit arnxv0/neathacks-project --visibility public --accept-visibility-change-consequences`
 - [x] Before/after neatlogs traces with numbers — full run `20261011-001111-d070`: 23/50 → 0/50, every run has a trace id; Preflight's own spans land too (`docs/evidence/report-full-20261011.json`)
