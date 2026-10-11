@@ -29,9 +29,9 @@ export const Kicker: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   <div className="mono" style={{ color: "var(--cyan)", letterSpacing: 6, fontSize: 22, textTransform: "uppercase" }}>{children}</div>
 );
 
-export const Big: React.FC<{ value: number; color?: string; from?: number; delay?: number }> = ({ value, color = "var(--fg)", from = 0, delay = 0 }) => {
+export const Big: React.FC<{ value: number; color?: string; from?: number; delay?: number; size?: number }> = ({ value, color = "var(--fg)", from = 0, delay = 0, size = 180 }) => {
   const f = useCurrentFrame();
   const t = interpolate(f, [delay, delay + 40], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const v = Math.round(from + (value - from) * (1 - Math.pow(1 - t, 3)));
-  return <span style={{ color, fontSize: 180, fontWeight: 700, letterSpacing: -8, lineHeight: 1 }}>{v}</span>;
+  return <span style={{ color, fontSize: size, fontWeight: 700, letterSpacing: -size / 22, lineHeight: 1 }}>{v}</span>;
 };

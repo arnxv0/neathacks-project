@@ -19,8 +19,15 @@ import { useReview } from "@/lib/api/hooks";
 import type { Cluster, FixAttempt } from "@/lib/api/types";
 import { Markdown, Mono, StatusBadge, Tone } from "../shared";
 
+/** The attempt a page should headline: the approved one, else the one that passed replay, else the newest attempt that
+ *  is still alive (not aborted/failed), else the newest. The attempts tab keeps the full history. */
+export function headlineAttempt(attempts: FixAttempt[]): FixAttempt | undefined {
+  const by = (s: string) => [...attempts].reverse().find((a) => a.status === s);
+  return by("approved") ?? by("passed") ?? [...attempts].reverse().find((a) => !["aborted", "failed", "rejected"].includes(a.status)) ?? attempts[attempts.length - 1];
+}
+
 export function FixCard({ c, id }: { c: Cluster; id: string }) {
-  const a = c.attempts[c.attempts.length - 1];
+  const a = headlineAttempt(c.attempts);
   const running = c.status === "fixing" || a?.status === "running" || a?.status === "replaying";
   const passed = a?.status === "passed" || c.status === "await_approval" || c.status === "merged";
   return (
@@ -94,7 +101,7 @@ export function ReviewActions({ id, c }: { id: string; c: Cluster }) {
   const { approve, reject, requestChanges } = useReview(id, c.cluster_id);
   const [comment, setComment] = useState("");
   const confetti = useRef<ConfettiRef>(null);
-  const a = c.attempts[c.attempts.length - 1];
+  const a = headlineAttempt(c.attempts);
   const canApprove = c.status === "await_approval" && a?.status === "passed";
   return (
     <div className="flex flex-wrap items-center gap-2 relative">

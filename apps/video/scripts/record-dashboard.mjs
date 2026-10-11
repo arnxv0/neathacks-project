@@ -1,15 +1,16 @@
 // Records real dashboard walkthrough clips with Playwright (installed Chrome), one webm per beat, into public/clips/.
+// Defaults are the 2026-10-11 full run (P0 = D1 = the full assessment; REG = the regression beat on the fixed main; FIX = A6, failed replay then 10/10).
 import { chromium } from "playwright";
 import { mkdirSync, readdirSync, renameSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const BASE = process.env.DASH_URL ?? "http://localhost:3000";
-const P0 = process.env.P0_ASSESSMENT ?? "20261010-165007-7646";
-const D1 = process.env.D1_ASSESSMENT ?? "20261010-154713-174a";
-const REG = process.env.REGRESS_ASSESSMENT ?? "regress-20261010-172203-0cb4";
-const FIX = process.env.FIX_CLUSTER ?? "b2-retry-5988d4";
-const CLUSTER = process.env.CLUSTER ?? "b2-retry-5988d4";
-const REPLAY_CLUSTER = process.env.REPLAY_CLUSTER ?? "d1-watchlist-453a5d";
+const P0 = process.env.P0_ASSESSMENT ?? "20261011-001111-d070";
+const D1 = process.env.D1_ASSESSMENT ?? "20261011-001111-d070";
+const REG = process.env.REGRESS_ASSESSMENT ?? "regress-20261011-020324-9852";
+const FIX = process.env.FIX_CLUSTER ?? "a6-watchlist-0c3c1b";
+const CLUSTER = process.env.CLUSTER ?? "b1-b2-b3-honesty-retry-0af0c9";
+const REPLAY_CLUSTER = process.env.REPLAY_CLUSTER ?? "b1-b2-b3-honesty-retry-0af0c9";
 const OUT = "public/clips";
 const SIZE = { width: 1920, height: 1080 };
 

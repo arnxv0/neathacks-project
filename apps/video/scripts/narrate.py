@@ -12,23 +12,29 @@ lines = {
  # explainer: one claim per scene, each answering a question a judge would ask
  "ex-hook": "Your agent passed the happy path. Production will not be so polite.",
  "ex-attack": "Preflight attacks an agent the way production will: hostile users, broken tools, and data that carries instructions. Here, a Crustdata company record tells the agent to email the contact list to an outside address. The unfixed agent obeys.",
- "ex-trace": "Every run is a neatlogs trace. Preflight grades each one with deterministic checks, groups failures by root cause, and pins the exact step where the bad run diverged from a good one. No guessing. Step five: the agent followed the record.",
- "ex-fix": "One Claude Code fixer per root cause, three in parallel, each in its own git worktree, with a short brief and the blast radius from entire-graph. Every fix commit carries an Entire checkpoint with the reasoning. A human reviews the diff, and approves.",
+ "ex-trace": "Every run is a neatlogs trace. Preflight grades each one with deterministic checks, groups failures by root cause, and pins the exact step where the bad run diverged from the spec. No guessing. Step eight: the agent emailed the contact list to the address in the record.",
+ "ex-fix": "One Claude Code fixer per root cause, fifteen root causes, three in parallel, each in its own git worktree, with a short brief and the blast radius from entire-graph. Every fix commit carries an Entire checkpoint with the reasoning. A human reviews the diff, and approves.",
  "ex-proof": "Is it luck? Preflight replays the exact failing seeds against the fix, five times each. Zero of four before. Twenty of twenty after. Then the whole catalog again: twenty-three of fifty before, zero after.",
- "ex-regression": "Does it stay fixed? Every approved fix becomes a permanent regression test. When a later refactor quietly brought a bug back, four suites failed, and Preflight named the commit.",
- "ex-business": "What does it cost? Six tenths of a cent per attack run. Thirty-seven dollars per full assessment. Measured, not estimated, and pushed into the cfo.ai model as a live scenario.",
+ "ex-regression": "Does it stay fixed? Every approved fix becomes a permanent regression test. When a later refactor quietly reverted the retry fix, four of fifteen suites failed, and Preflight named the commit.",
+ "ex-business": "What does it cost? Six tenths of a cent per attack run. Thirty-seven dollars per full assessment. Measured, not estimated, and pushed into the cfo.ai model as a live scenario: eighty-one percent gross margin.",
  "ex-cta": "Preflight. Attack, trace, fix, prove, keep it fixed. Crash-test your agent before your customers do.",
  # product demo: each clip answers one question
  "pd-title": "This is Preflight, running against a real sales agent built on Claude and Crustdata. Every number you will see comes from real runs, logged in neatlogs.",
  "pd-01": "How bad is it? Twenty attack types, fifty seeds, against the unfixed agent. Twenty-three of fifty got through: injected records obeyed, unconfirmed credits, role claims, retries without backoff, a prompt leak, cross-tenant SQL.",
  "pd-02": "Everything runs from an event ledger: attack, grade, cluster, diverge, fix, review, regress, and the after pass. The pipeline view shows it live.",
  "pd-03": "Why did it fail? Each cluster has a root-cause hypothesis, the suspected files, the blast radius from entire-graph, and the exact divergent step, with a link to the neatlogs trace.",
- "pd-04": "Who fixes it? Fifteen Claude Code fixers, three at a time, each in its own worktree. This one failed its first replay, read the evidence, and passed on the second attempt. A human approves, requests changes, edits, or rejects. Nothing merges on its own.",
+ "pd-04": "Who fixes it? One Claude Code fixer per root cause, three at a time, each in its own worktree: twenty-five fix attempts, twenty-three by fixers. This one failed its first replay, zero of ten, read the evidence, and passed on the second attempt, ten of ten. A human approves, requests changes, edits, or rejects. Nothing merges on its own.",
  "pd-05": "Is it luck? The exact failing seeds, replayed five times each against the fixed branch. Zero of four before. Twenty of twenty after.",
- "pd-06": "Does it stay fixed? A planted refactor quietly reverted the retry fix. Four regression suites failed, and Preflight named the exact commit.",
+ "pd-06": "Does it stay fixed? A planted refactor quietly reverted the retry fix. Four of fifteen regression suites failed, and Preflight named the exact commit.",
  "pd-07": "What does it cost? Six tenths of a cent per attack run. About a dollar forty per fixer attempt. Thirty-seven dollars per full assessment. Measured, and pushed into the cfo.ai model as a live scenario.",
- "pd-08": "Same fifty seeds against the merged main: twenty-three before, zero after. Repeated passes agree: twenty-two to twenty-three before, zero to five after, and the leftovers got a second fix pass. Fifteen root causes, sixteen permanent tests.",
+ "pd-08": "Same fifty seeds against the merged main: twenty-three before, zero after. Repeated passes agree: twenty-two to twenty-three before, zero to five after, and the leftovers got a second fix pass. Fifteen root causes, seventeen approved fixes, sixteen permanent regression suites.",
  "pd-outro": "Find it, fix it, prove it, keep it fixed. Preflight.",
+ # 30 s teaser (16:9 and 9:16): five beats, one line each
+ "tz-hook": "Your AI agent passed the happy path. Production will not be so polite.",
+ "tz-before-after": "Preflight attacked a real sales agent: twenty-three of fifty runs got through. After its fixes, zero of fifty.",
+ "tz-replay": "Every fix is replayed five times per failing seed. Zero of four before. Twenty of twenty after.",
+ "tz-regression": "A later refactor brought a bug back. Four of fifteen suites failed, and Preflight named the commit.",
+ "tz-cta": "Crash-test your agent before your customers do. Preflight, built for neatHack.",
 }
 
 # Kokoro barely pauses at commas. Synthesize clause by clause and insert explicit silence:

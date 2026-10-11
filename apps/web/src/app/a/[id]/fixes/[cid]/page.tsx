@@ -3,7 +3,7 @@ import { use, useMemo } from "react";
 import Link from "next/link";
 import { useCluster } from "@/lib/api/hooks";
 import { useEventStream } from "@/lib/sse/useEventStream";
-import { AttemptHistory, CheckpointPanel, DiffViewer, ReplayDots, ReviewActions } from "@/components/preflight/fixes";
+import { AttemptHistory, CheckpointPanel, DiffViewer, ReplayDots, ReviewActions, headlineAttempt } from "@/components/preflight/fixes";
 import { Markdown, Mono, SectionHeader, StatusBadge, Tone } from "@/components/preflight/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +20,8 @@ export default function FixPage({ params }: { params: Promise<{ id: string; cid:
     return ev ? { passed: ev.passed as number, total: ev.total as number } : undefined;
   }, [events, cid]);
   if (!c) return <Skeleton className="h-96" />;
-  const a = c.attempts[c.attempts.length - 1];
+  // Headline the approved / passed attempt (a stale `replaying` row from a stopped process must not hide a 10/10 result); the Attempts tab lists all of them.
+  const a = headlineAttempt(c.attempts);
   const running = c.status === "fixing" || a?.status === "running" || a?.status === "replaying";
   return (
     <div className="space-y-6">
@@ -29,7 +30,7 @@ export default function FixPage({ params }: { params: Promise<{ id: string; cid:
       <Card className="relative overflow-hidden border-border/60">
         {running && <BorderBeam size={200} duration={5} colorFrom="oklch(0.8 0.14 200)" colorTo="oklch(0.72 0.17 300)" />}
         <CardContent className="p-5 flex flex-wrap items-center gap-6">
-          <div><p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">replay proof</p>{a ? <ReplayDots replay={a.replay} live={running ? live : undefined} /> : <Mono>waiting for the fixer…</Mono>}</div>
+          <div><p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">replay proof{a && c.attempts.length > 1 ? ` · attempt ${a.n} of ${c.attempts.length}` : ""}</p>{a ? <ReplayDots replay={a.replay} live={running ? live : undefined} /> : <Mono>waiting for the fixer…</Mono>}</div>
           <div className="ml-auto"><ReviewActions id={id} c={c} /></div>
         </CardContent>
       </Card>
