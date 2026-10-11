@@ -18,14 +18,14 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function smoothScroll(page, px, step = 60, delay = 16) { for (let y = 0; y < px; y += step) { await page.mouse.wheel(0, step); await wait(delay); } }
 
 const beats = [
-  { name: "01-scorecard", url: `/a/${P0}`, run: async (p) => { await wait(3500); await smoothScroll(p, 500); await wait(2500); } },
-  { name: "02-pipeline", url: `/a/${P0}/pipeline`, run: async (p) => { await wait(3500); await smoothScroll(p, 700); await wait(3000); } },
-  { name: "03-clusters", url: `/a/${P0}/clusters`, run: async (p) => { await wait(3000); await p.click(`a[href$="/clusters/${CLUSTER}"]`); await wait(3500); await smoothScroll(p, 900); await wait(3000); } },
-  { name: "04-fix", url: `/a/${P0}/fixes`, run: async (p) => { await wait(2500); await p.click(`a[href$="/fixes/${FIX}"]`); await wait(3500); await smoothScroll(p, 700); await wait(3000); } },
-  { name: "05-replay-proof", url: `/a/${D1}/fixes/${REPLAY_CLUSTER}`, run: async (p) => { await wait(4000); await smoothScroll(p, 300); await wait(2000); } },
-  { name: "06-regressions", url: `/a/${REG}/regressions`, run: async (p) => { await wait(4000); await smoothScroll(p, 300); await wait(2500); } },
-  { name: "07-cost", url: `/a/${P0}/cost`, run: async (p) => { await wait(3500); await smoothScroll(p, 400); await wait(2500); } },
-  { name: "08-before-after", url: `/a/${D1}`, run: async (p) => { await wait(4500); } },
+  { name: "01-scorecard", url: `/a/${P0}`, run: async (p) => { await wait(4500); await smoothScroll(p, 350); await wait(5000); await smoothScroll(p, 350); await wait(5000); await smoothScroll(p, 300); await wait(3500); } },
+  { name: "02-pipeline", url: `/a/${P0}/pipeline`, run: async (p) => { await wait(4000); await smoothScroll(p, 400); await wait(4500); await smoothScroll(p, 400); await wait(5000); } },
+  { name: "03-clusters", url: `/a/${P0}/clusters`, run: async (p) => { await wait(3000); await p.click(`a[href$="/clusters/${CLUSTER}"]`); await wait(4000); await smoothScroll(p, 500); await wait(3000); await smoothScroll(p, 400); await wait(3000); } },
+  { name: "04-fix", url: `/a/${P0}/fixes`, run: async (p) => { await wait(3000); await p.click(`a[href$="/fixes/${FIX}"]`); await wait(8500); await smoothScroll(p, 400); await wait(6500); await smoothScroll(p, 400); await wait(6000); } },
+  { name: "05-replay-proof", url: `/a/${D1}/fixes/${REPLAY_CLUSTER}`, run: async (p) => { await wait(5000); await smoothScroll(p, 300); await wait(5500); } },
+  { name: "06-regressions", url: `/a/${REG}/regressions`, run: async (p) => { await wait(5000); await smoothScroll(p, 300); await wait(5500); } },
+  { name: "07-cost", url: `/a/${P0}/cost`, run: async (p) => { await wait(5000); await smoothScroll(p, 400); await wait(5000); await smoothScroll(p, 200); await wait(5500); } },
+  { name: "08-before-after", url: `/a/${D1}`, run: async (p) => { await wait(8000); await smoothScroll(p, 350); await wait(6500); await smoothScroll(p, 350); await wait(6000); } },
 ];
 
 mkdirSync(OUT, { recursive: true });
