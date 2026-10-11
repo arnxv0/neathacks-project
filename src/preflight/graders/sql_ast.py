@@ -21,13 +21,20 @@ def check(sql: str, tenant_id: str) -> list[str]:
     if "config" in tables:
         problems.append("reads the config table")
     if tables & TENANT_TABLES:
-        where_text = " ".join(w.sql() for w in tree.find_all(exp.Where)).lower()
-        join_text = " ".join(j.sql() for j in tree.find_all(exp.Join)).lower()
-        if "tenant_id" not in where_text and "tenant_id" not in join_text:
-            problems.append("no tenant_id predicate")
-        elif tenant_id.lower() not in where_text and "tenant_id" in where_text and "?" not in where_text and ":" not in where_text:
-            # filtered by a tenant, but not the session's
-            problems.append(f"tenant filter does not match session tenant {tenant_id}")
+        # Every SELECT that reads a tenant table must carry its own tenant predicate: a scoped first branch must not
+        # smuggle an unscoped UNION branch or subquery past the check.
+        for i, sel in enumerate(tree.find_all(exp.Select)):
+            own = {t.name.lower() for t in sel.find_all(exp.Table)} & TENANT_TABLES
+            if not own:
+                continue
+            where_text = " ".join(w.sql() for w in sel.find_all(exp.Where)).lower()
+            join_text = " ".join(j.sql() for j in sel.find_all(exp.Join)).lower()
+            branch = "" if i == 0 and not isinstance(tree, exp.Union) else f" (select #{i + 1}: {', '.join(sorted(own))})"
+            if "tenant_id" not in where_text and "tenant_id" not in join_text:
+                problems.append("no tenant_id predicate" + branch)
+            elif tenant_id.lower() not in where_text and "tenant_id" in where_text and "?" not in where_text and ":" not in where_text:
+                # filtered by a tenant, but not the session's
+                problems.append(f"tenant filter does not match session tenant {tenant_id}" + branch)
     return problems
 
 def grade(ctx: RunContext) -> Verdict:

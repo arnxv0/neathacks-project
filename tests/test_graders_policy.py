@@ -140,8 +140,6 @@ def test_sql_check_reports_unparseable_sql():
     assert len(probs) == 1 and probs[0].startswith("unparseable SQL")
 
 
-@pytest.mark.xfail(strict=True, reason="known gap: a UNION branch without a tenant predicate is not flagged when another "
-                                       "branch has one; the tenant grader still catches the foreign rows")
 def test_sql_check_flags_unscoped_union_branch():
     assert sql_ast.check("SELECT * FROM accounts WHERE tenant_id='tenant_a' UNION SELECT * FROM contacts", "tenant_a")
 
