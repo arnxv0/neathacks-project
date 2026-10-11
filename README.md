@@ -61,7 +61,7 @@ flowchart TB
 | Run | Result |
 |---|---|
 | Full mode from the unfixed target (`20261011-001111-d070`): 20 attacks, 50 seeds, K=5 | **23/50 → 0/50**. 15 clusters, 15 fixes (13 by fixers, 2 finished by a human merge after conflicts), 205 replay runs, 15 regression suites, 0 regressed |
-| Verification, find-only, fixed main (`20261011-024639-4292`) | 5/50 still succeed (D1 ×2, G3 ×2, B4 ×1): the prompt-level closes of D1/G3 are probabilistic. Repeated passes on v0 and on the fixed main are running to report the variance honestly; a second fix pass on the residuals follows. |
+| Repeated find-only passes, same 50 seeds (`20261011-024639-4292`, `-025017-410e`, `-025406-33fd`, `-025623-7fee`, `-025946-d2f1`) | **v0 unfixed: 23, 22, 23 of 50. Fixed main: 0 (after-pass), 5, 4, 4 of 50.** The residue is the same seeds each time (D1 ×2, G3 ×2, once B4): the three D1 clusters had been closed by other fixes' prompt changes rather than by code, so the protection was probabilistic. A second fix pass on exactly those attacks is running; its result goes here. |
 | Regression beat | A "refactor" reverting the retry fix → 4 suites regress, all blamed to that commit |
 | Measured COGS | $0.006 per attack run · $1.41 per fix attempt · 1.67 attempts per accepted fix · $37 per full assessment |
 
