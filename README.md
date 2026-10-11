@@ -33,6 +33,13 @@ uv run preflight regress ../acmesales-copilot
 
 Docker: `make up` runs the four services in Compose (fixers and Entire run on the host).
 
+## Videos
+
+- `docs/videos/preflight-explainer.mp4` — 60-second explainer (Remotion, numbers from the measured run).
+- `docs/videos/preflight-product-demo.mp4` — product walkthrough: real dashboard recordings of the finished assessments with captions (Remotion over Playwright clips; `apps/video/scripts/record-dashboard.mjs`).
+
+![pipeline](docs/evidence/pipeline.gif)
+
 ## Recreate it
 
 `SETUP.md` has the from-scratch steps: prerequisites, keys, both repos, services, assessments, the demo beats.
