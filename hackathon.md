@@ -24,7 +24,9 @@
 - Approvals through the dashboard: first fix merged; the other two conflicted with it, so Preflight replayed their clusters against main, found main already passed, and recorded them as fixed (a "recovery from a failed action" the judges asked for). Regression suite 3/3 holding; after-pass **3/3 → 0/3**.
 - Breadth: all 20 P0 attacks (50 seeds) run find-only on the fixed main: 8/20 still succeed (retries without backoff, unconfirmed credits, role claims, prompt leak, crash on empty input). The analyst merged 5 signature clusters into 3 root causes; 3 fixers dispatched in parallel.
 - Entire: commit condensation hangs in Entire's post-commit hook during agent sessions, so Preflight now commits on the fixer's behalf after the session ends (trailer kept, no hang). entire-graph installed: `impact`/`search` output (blast radius, co-change coupling between `crustdata.py` and `system.md`) goes into every fixer brief and the cluster view.
-- Remotion explainer (`apps/video`): 8 scenes, numbers injected from `out/report.json` (`make video`).
+- Remotion explainer (`apps/video`): 8 scenes, numbers injected from `out/report.json` (`make video`). First render done.
+- Evening: P0 fixers (3 in parallel) → authority/confirmation fix **0/3 → 6/6** merged; prompt-leak fix failed replay on attempt 1 (prompt-only change), fixer got the failing transcripts back and passed **0/1 → 2/2** on attempt 2 with an output redaction guard; merged. Found and fixed a real concurrency bug while doing it: parallel replays shared one port.
+- New **Pipeline** screen: live stage track, attack matrix lighting up as runs land, fixer lanes, event feed (all from the event ledger over SSE). Screenshot in `docs/evidence/pipeline-live.jpg`.
 
 ## Submission checklist
 - [ ] Public repos with hackathon-dated commits (Preflight repo is still private — owner to flip)
