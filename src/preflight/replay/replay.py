@@ -42,6 +42,14 @@ class ReplayTarget:
         return "python3"
 
     def __enter__(self) -> SystemSpec:
+        from ..sandbox import registry as sbx_registry, runtime as sbx_runtime
+        entry = sbx_registry.by_path(self.spec.root)
+        if entry:   # sandbox target (only reachable with --allow-fix): the worktree runs in its own container, never via uvicorn on the host
+            self._sbx = (entry.slug, f"r{self.port}")
+            running = sbx_runtime.start(entry.slug, source_dir=self.worktree, instance=self._sbx[1])
+            for comp in running.spec.components.values():
+                comp.repo_path = self.worktree
+            return running.spec
         env = dict(os.environ)
         env.update({"PORT": str(self.port), "ACMESALES_DB": str(self.tmp / "db.sqlite"), "ACMESALES_MIRROR_DIR": str(self.tmp / "mirror"),
                     "CRUSTDATA_BASE_URL": f"http://127.0.0.1:{config.CFG.ports.get('proxy', 8300)}"})
@@ -67,6 +75,9 @@ class ReplayTarget:
         return spec
 
     def __exit__(self, *exc) -> None:
+        if getattr(self, "_sbx", None):
+            from ..sandbox import runtime as sbx_runtime
+            sbx_runtime.stop(*self._sbx)
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
             try:

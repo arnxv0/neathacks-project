@@ -8,15 +8,32 @@ app = typer.Typer(no_args_is_help=True, help="Preflight crash-tests an AI agent 
 console = Console()
 
 @app.command()
-def run(target_dir: pathlib.Path = typer.Argument(..., help="directory containing preflight.yaml"),
+def run(target_dir: str = typer.Argument(..., help="directory containing preflight.yaml, or sandbox:<slug>"),
         mode: str = typer.Option("dev", help="dev | full"),
         attacks: str = typer.Option(None, help="P0 | D1,E1 | all"),
         seeds: int = typer.Option(None, help="override seeds per attack"),
         label: str = typer.Option(None, help="free-text label stored in the manifest"),
-        no_fix: bool = typer.Option(False, "--no-fix", help="stop after clustering (find only)")):
+        no_fix: bool = typer.Option(False, "--no-fix", help="stop after clustering (find only)"),
+        allow_fix: bool = typer.Option(False, "--allow-fix", help="sandbox targets only: let fixers work on a TRUSTED target "
+                                                                  "(local branches + a patch file, never pushed). Default: find only")):
     """Attack, grade, cluster, find divergence, dispatch fixers, replay. Stops at AWAIT_APPROVAL."""
     from .coordinator import Coordinator
-    Coordinator(target_dir, mode=mode, attacks=attacks, seeds=seeds, label=label, no_fix=no_fix).run()
+    from .sandbox.registry import RegistryError
+    try:
+        Coordinator(_target_path(target_dir), mode=mode, attacks=attacks, seeds=seeds, label=label, no_fix=no_fix, allow_fix=allow_fix).run()
+    except RegistryError as e:
+        console.print(f"[red]{e.code}: {e}"); raise typer.Exit(2)
+
+def _target_path(arg: str) -> pathlib.Path:
+    """`sandbox:<slug>` -> the clone directory; anything else is a path."""
+    if arg.startswith("sandbox:"):
+        from .sandbox import registry
+        from .sandbox.registry import RegistryError
+        try:
+            return registry.clone_dir(registry.get(arg.split(":", 1)[1]).slug)
+        except RegistryError as e:
+            console.print(f"[red]{e}"); raise typer.Exit(2)
+    return pathlib.Path(arg)
 
 @app.command()
 def resume(assessment_id: str):
@@ -101,9 +118,6 @@ def web(host: str = "127.0.0.1", port: int = 8200):
     import uvicorn
     uvicorn.run("preflight.web.app:app", host=host, port=port, log_level="info")
 
-if __name__ == "__main__":
-    app()
-
 db_app = typer.Typer(no_args_is_help=True, help="SQLite ledger store (ledger/preflight.sqlite, or $PREFLIGHT_DB).")
 app.add_typer(db_app, name="db")
 
@@ -175,3 +189,79 @@ def db_export(dest: pathlib.Path):
         c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     shutil.copy(db.path(), dest)
     console.print(f"exported {db.path()} -> {dest} ({dest.stat().st_size // 1024} KB)")
+
+
+target_app = typer.Typer(no_args_is_help=True, help="Sandbox targets: test a public GitHub repo (docs/SANDBOX_TARGETS.md).")
+app.add_typer(target_app, name="target")
+
+def _sbx(fn, *args):
+    from .sandbox.registry import RegistryError
+    try:
+        return fn(*args)
+    except RegistryError as e:
+        console.print(f"[red]{e.code}: {e}"); raise typer.Exit(2)
+
+def _print_entry(e) -> None:
+    console.print(f"[bold]{e.slug}[/]  {e.status}  {e.url}" + ("  [trusted]" if e.trusted else ""))
+    if e.last_error:
+        console.print(f"  [red]{e.error_code}[/]: {e.last_error[:600]}")
+
+@target_app.command("add")
+def target_add(url: str = typer.Argument(..., help="https://github.com/<owner>/<repo>")):
+    """Clone a public GitHub repo into the sandbox and inspect it. Nothing from the repo is executed."""
+    from .sandbox import clone
+    e = _sbx(clone.add, url)
+    _print_entry(e)
+    console.print("next: " + (f"preflight target approve {e.slug}  (after reading its preflight.yaml)" if e.contract_native else f"preflight target onboard {e.slug}"))
+
+@target_app.command("list")
+def target_list():
+    from .sandbox import registry
+    entries = registry.list_entries()
+    for e in entries:
+        _print_entry(e)
+    if not entries:
+        console.print("(no sandbox targets; add one with `preflight target add <url>`)")
+
+@target_app.command("inspect")
+def target_inspect(slug: str):
+    """Entry + static inspection summary as JSON."""
+    import json as _json
+    from .sandbox import registry
+    e = _sbx(registry.get, slug)
+    print(_json.dumps(e.model_dump(exclude={"approved_fingerprint"}), indent=2, default=str))
+
+@target_app.command("onboard")
+def target_onboard(slug: str):
+    """Let a confined Claude Code session (file tools only) write preflight.yaml + preflight_adapter.py. Ends in needs_review."""
+    from .sandbox import onboard, registry
+    e = _sbx(onboard.run, slug)
+    _print_entry(e)
+    if e.status == "needs_review":
+        console.print(f"review: {registry.meta_path(slug, '.onboard.patch')}\nthen:   preflight target approve {slug}")
+    raise typer.Exit(0 if e.status == "needs_review" else 1)
+
+@target_app.command("approve")
+def target_approve(slug: str):
+    """Human gate: you have read the generated (or shipped) preflight.yaml and adapter and accept running them in a container."""
+    from .sandbox import onboard
+    _print_entry(_sbx(onboard.approve, slug))
+    console.print(f"run:  preflight run sandbox:{slug}")
+
+@target_app.command("trust")
+def target_trust(slug: str, off: bool = typer.Option(False, "--off", help="remove the trusted flag")):
+    """Mark a target as your own code: enables --allow-fix and, with PREFLIGHT_ALLOW_UNSANDBOXED=1, running without Docker."""
+    from .sandbox import registry
+    _print_entry(_sbx(lambda: registry.update(slug, trusted=not off)))
+
+@target_app.command("rm")
+def target_rm(slug: str):
+    """Stop the container, delete the clone and its registry entry."""
+    from .sandbox import registry, runtime
+    _sbx(registry.get, slug)
+    runtime.purge(slug)
+    _sbx(registry.remove, slug)
+    console.print(f"removed {slug}")
+
+if __name__ == "__main__":   # after every sub-app is registered, so `python -m preflight.cli db|target ...` works too
+    app()

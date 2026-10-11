@@ -27,3 +27,6 @@ deploy/aws/terraform/terraform.tfvars
 # local tooling
 .claude/
 deploy/aws/terraform/tfplan
+
+# sandbox targets: third-party clones + their registry (docs/SANDBOX_TARGETS.md)
+/sandbox/

@@ -81,10 +81,24 @@ uv run preflight db stats             # one-screen summary of the latest assessm
 
 Approve fixes in the dashboard or with `uv run preflight approve <assessment> <cluster>`. From-scratch steps, Windows notes and known traps: [SETUP.md](SETUP.md). Make is optional everywhere.
 
+## Test another agent
+
+Any public GitHub repo can be added as a *sandbox target* from the dashboard or the CLI. The clone is inert (no hooks, no submodules, nothing executed), a Claude Code session with file tools only writes the `preflight.yaml` and a small HTTP adapter, a human approves the diff, and the agent is then started only inside a locked-down Docker container. Sandbox targets are find-only by default.
+
+```bash
+uv run preflight target add https://github.com/<owner>/<repo>
+uv run preflight target onboard <owner>--<repo>      # writes preflight.yaml + preflight_adapter.py, ends in needs_review
+uv run preflight target approve <owner>--<repo>      # after reading sandbox/registry/<slug>.onboard.patch
+uv run preflight run sandbox:<owner>--<repo>         # needs Docker; set PREFLIGHT_SANDBOX_LITELLM_API_KEY to a scoped key
+```
+
+Flow, API, threat model and what is not protected against: [docs/SANDBOX_TARGETS.md](docs/SANDBOX_TARGETS.md).
+
 ## Documents
 
 | | |
 |---|---|
+| [docs/SANDBOX_TARGETS.md](docs/SANDBOX_TARGETS.md) | Testing a third-party repo: flow, isolation, limits |
 | [STATUS.md](STATUS.md) | What exists, what was verified on real runs, sponsor integration, open items |
 | [SETUP.md](SETUP.md) | Recreate it from a clean machine |
 | [DECISIONS.md](DECISIONS.md) | Dated log of every deviation, incident and judgment call |

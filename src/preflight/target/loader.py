@@ -40,19 +40,22 @@ class SystemSpec(BaseModel):
     def entry(self) -> ComponentSpec:
         return self.components[self.entrypoint]
 
-def _expand(v):
+def _expand(v, env: dict[str, str] | None = None, env_only: bool = False):
     if isinstance(v, str):
-        return re.sub(r"\$\{(\w+)\}", lambda m: os.getenv(m.group(1), ""), v)
+        look = (lambda k: (env or {}).get(k, "")) if env_only else (lambda k: (env or {}).get(k) or os.getenv(k, ""))
+        return re.sub(r"\$\{(\w+)\}", lambda m: look(m.group(1)), v)
     if isinstance(v, dict):
-        return {k: _expand(x) for k, x in v.items()}
+        return {k: _expand(x, env, env_only) for k, x in v.items()}
     if isinstance(v, list):
-        return [_expand(x) for x in v]
+        return [_expand(x, env, env_only) for x in v]
     return v
 
-def load(target_dir: pathlib.Path) -> SystemSpec:
+def load(target_dir: pathlib.Path, env: dict[str, str] | None = None, env_only: bool = False) -> SystemSpec:
+    """`env` overlays the process environment for `${VAR}` placeholders. Sandbox targets pass their PORT and per-target
+    ownership token here with `env_only=True`, so a third-party manifest can never pull host variables into a URL or command."""
     target_dir = pathlib.Path(target_dir).resolve()
     p = target_dir / "preflight.yaml"
-    data = _expand(yaml.safe_load(p.read_text()))
+    data = _expand(yaml.safe_load(p.read_text()), env, env_only)
     spec = SystemSpec.model_validate(data)
     spec.root = target_dir
     for name, comp in spec.components.items():

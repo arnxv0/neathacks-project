@@ -20,13 +20,13 @@ def wait_healthy(comp: ComponentSpec, timeout_s: float = 60) -> None:
         time.sleep(1)
     raise TargetError(f"{comp.name}: not healthy at {comp.healthcheck} after {timeout_s}s")
 
-def ensure_running(comp: ComponentSpec, log_path=None) -> subprocess.Popen | None:
+def ensure_running(comp: ComponentSpec, log_path=None, env: dict[str, str] | None = None) -> subprocess.Popen | None:
     if healthy(comp):
         return None
     if not comp.start:
         raise TargetError(f"{comp.name}: not running and no `start:` command")
     log = open(log_path, "a") if log_path else subprocess.DEVNULL
-    proc = subprocess.Popen(comp.start, shell=True, cwd=comp.repo_path, stdout=log, stderr=subprocess.STDOUT)
+    proc = subprocess.Popen(comp.start, shell=True, cwd=comp.repo_path, stdout=log, stderr=subprocess.STDOUT, env=env)
     wait_healthy(comp)
     return proc
 

@@ -16,6 +16,8 @@ app = FastAPI(title="Preflight API", version="0.1.0")
 CORS_ORIGINS = [o.strip() for o in os.getenv("PREFLIGHT_CORS_ORIGINS", "*").split(",") if o.strip()] or ["*"]
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 JOBS: dict[str, subprocess.Popen] = {}
+from .routes import targets as targets_routes
+app.include_router(targets_routes.router)   # /api/targets: built-in + sandbox targets (docs/SANDBOX_TARGETS.md)
 
 def _cli(*args: str, log: pathlib.Path | None = None) -> subprocess.Popen:
     env = clean_env()
@@ -80,10 +82,20 @@ class StartIn(BaseModel):
     attacks: str | None = None
     seeds: int | None = None
     no_fix: bool = False
+    target: str | None = None      # "builtin" or a sandbox slug from /api/targets; wins over target_dir
+    allow_fix: bool = False        # sandbox targets are find-only unless this is set AND the target is trusted
 
 @app.post("/api/assessments")
 def start(body: StartIn):
-    args = ["run", body.target_dir, "--mode", body.mode]
+    target_dir, sandbox = body.target_dir, False
+    if body.target:
+        d, sandbox = targets_routes.resolve_for_run(body.target, body.allow_fix)   # 4xx: unknown, not approved, Docker missing
+        target_dir = str(d)
+    args = ["run", target_dir, "--mode", body.mode]
+    if sandbox and body.allow_fix:
+        args += ["--allow-fix"]
+    elif sandbox:
+        body.no_fix = True
     if body.attacks:
         args += ["--attacks", body.attacks]
     if body.seeds:
