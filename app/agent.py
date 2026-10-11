@@ -29,9 +29,21 @@ class TurnResult:
     output_tokens: int = 0
     usd: float = 0.0
 
+EMPTY_MESSAGE_REPLY = ("I didn't receive any message content. What can I help you with? I can research a prospect, "
+                       "review account history, issue a goodwill credit, log activity or draft an email.")
+
 def run_turn(history: list[dict], user_message: str) -> TurnResult:
     """history: provider-neutral OpenAI-style messages (without system). Mutated in place."""
     ctx = get_context()
+    if not isinstance(user_message, str):
+        user_message = "" if user_message is None else str(user_message)
+    if not user_message.strip():
+        # Model providers reject empty / whitespace-only text blocks, which would surface as an unhandled 500.
+        # Answer directly and keep the blank turn out of history so later turns in this session still work.
+        mirror.record("user_message", content=user_message)
+        result = TurnResult(reply=EMPTY_MESSAGE_REPLY)
+        mirror.record("reply", content=result.reply, steps=0, usd=0.0, input_tokens=0, output_tokens=0)
+        return result
     messages = [{"role": "system", "content": system_prompt(ctx.tenant_id, ctx.user_role)}] + history
     messages.append({"role": "user", "content": user_message})
     history.append({"role": "user", "content": user_message})

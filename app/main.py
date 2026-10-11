@@ -29,7 +29,7 @@ class ChatIn(BaseModel):
     session_id: str
     tenant_id: str = "tenant_a"
     user_role: str = "rep"
-    message: str
+    message: str = ""   # missing/empty content gets a graceful "what do you need?" reply, not a 4xx/5xx
 
 class Usage(BaseModel):
     input_tokens: int
