@@ -5,29 +5,39 @@ import { useEventStream } from "@/lib/sse/useEventStream";
 import { api } from "@/lib/api/client";
 import type { PreflightEvent } from "@/lib/api/types";
 import { AttackProgress, FixerLanes, LiveFeed, StageTrack, eventsToRows, useStageCounts } from "@/components/preflight/pipeline";
-import { SectionHeader } from "@/components/preflight/shared";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DataView, FadeRise, PageHeader, PANEL } from "@/components/preflight/shared";
+import { PipelineSkeleton } from "@/components/preflight/shared/skeletons";
 import { Card, CardContent } from "@/components/ui/card";
+
+const SUB = "sticky top-14 z-10 mb-2 bg-background/85 py-2 text-sm font-medium backdrop-blur";
 
 export default function Pipeline({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data } = useSummary(id);
+  const query = useSummary(id);
+  const data = query.data;
   const { events: live } = useEventStream(id);
   const [history, setHistory] = useState<PreflightEvent[]>([]);
   useEffect(() => { api<PreflightEvent[]>(`/api/assessments/${id}/events/history`).then(setHistory).catch(() => setHistory([])); }, [id]);
   const events = [...history, ...live.filter((e) => !history.some((h) => h.seq === e.seq))];
   const counts = useStageCounts(data, events);
-  if (!data) return <Skeleton className="h-96" />;
-  const rows = eventsToRows(events, id, data.attacks);
   return (
-    <div className="space-y-6">
-      <SectionHeader title="Pipeline" subtitle="every stage of the assessment, live from the event ledger" />
-      <Card className="border-border/60"><CardContent className="p-6"><StageTrack state={data.manifest.state} counts={counts} /></CardContent></Card>
-      <Card className="border-border/60"><CardContent className="p-4"><AttackProgress s={data} /></CardContent></Card>
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-2"><p className="text-sm font-medium mb-2">fixer lanes</p><FixerLanes s={data} id={id} /></div>
-        <div className="lg:col-span-3"><p className="text-sm font-medium mb-2">live feed</p><LiveFeed rows={rows} /></div>
-      </div>
-    </div>
+    <DataView query={query} what="the pipeline" skeleton={<PipelineSkeleton />}>
+      {(data) => {
+        const rows = eventsToRows(events, id, data.attacks);
+        return (
+          <div>
+            <PageHeader title="Pipeline" subtitle="every stage of the assessment, live from the event ledger" />
+            <div className="space-y-6">
+              <Card className={PANEL}><CardContent className="p-4 sm:p-6"><StageTrack state={data.manifest.state} counts={counts} /></CardContent></Card>
+              <FadeRise delay={0.05}><Card className={PANEL}><CardContent className="p-4"><AttackProgress s={data} /></CardContent></Card></FadeRise>
+              <div className="grid items-start gap-6 lg:grid-cols-5">
+                <section className="min-w-0 lg:col-span-2"><h2 className={SUB}>Fixer lanes</h2><FixerLanes s={data} id={id} /></section>
+                <section className="min-w-0 lg:col-span-3"><h2 className={SUB}>Live feed</h2><LiveFeed rows={rows} /></section>
+              </div>
+            </div>
+          </div>
+        );
+      }}
+    </DataView>
   );
 }

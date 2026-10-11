@@ -2,12 +2,15 @@
 import { use } from "react";
 import { useSummary } from "@/lib/api/hooks";
 import { CostPanel } from "@/components/preflight/cost";
-import { SectionHeader } from "@/components/preflight/shared";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DataView, PageHeader } from "@/components/preflight/shared";
+import { CostSkeleton } from "@/components/preflight/shared/skeletons";
 
 export default function Cost({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data } = useSummary(id);
-  if (!data) return <Skeleton className="h-64" />;
-  return <div className="space-y-6"><SectionHeader title="Cost" subtitle="every LLM call in the loop is metered; these numbers feed the business model" /><CostPanel s={data} /></div>;
+  const query = useSummary(id);
+  return (
+    <DataView query={query} what="the cost report" skeleton={<CostSkeleton />}>
+      {(data) => <div><PageHeader title="Cost" subtitle="every LLM call in the loop is metered; these numbers feed the business model" /><CostPanel s={data} /></div>}
+    </DataView>
+  );
 }

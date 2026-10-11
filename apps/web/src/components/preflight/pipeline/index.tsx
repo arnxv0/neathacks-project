@@ -6,7 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { cn } from "@/lib/utils";
 import type { PreflightEvent, Summary } from "@/lib/api/types";
-import { Mono, Tone } from "../shared";
+import { Check, Radio, Wrench } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CARD_LINK, EASE, EmptyState, Mono, PANEL, PANEL_LINK, Stagger, StaggerItem, StatusBadge, Tone } from "../shared";
 import { ReplayDots } from "../fixes";
 import { timeAgo } from "@/lib/format";
 
@@ -29,25 +31,32 @@ const stageIndex = (state: string) => { const i = ORDER.indexOf(state === "REPOR
 export function StageTrack({ state, counts }: { state: string; counts: Record<string, string | number | undefined> }) {
   const cur = stageIndex(state);
   const done = state === "DONE" || state === "STOPPED";
+  const progress = (done ? ORDER.length - 1 : cur) / (ORDER.length - 1);
+  // The connector runs from the centre of the first circle to the centre of the last one: half a column in from each side.
+  const inset = `${100 / (STAGES.length * 2)}%`;
   return (
-    <div className="relative">
-      <div className="absolute left-0 right-0 top-[22px] h-px bg-border" />
-      <motion.div className="absolute left-0 top-[22px] h-px bg-gradient-to-r from-primary via-trace to-pass" initial={{ width: 0 }} animate={{ width: `${((done ? ORDER.length - 1 : cur) / (ORDER.length - 1)) * 100}%` }} transition={{ type: "spring", stiffness: 60, damping: 18 }} />
-      <ol className="relative grid" style={{ gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))` }}>
-        {STAGES.map((s, i) => {
-          const status = done && i <= cur ? "done" : i < cur ? "done" : i === cur ? "active" : "todo";
-          return (
-            <li key={s.id} className="flex flex-col items-center text-center">
-              <motion.div layout className={cn("size-11 rounded-full border flex items-center justify-center mono text-[11px] transition-colors bg-background z-10",
-                status === "done" && "border-pass text-pass bg-pass/10", status === "active" && "border-primary text-primary pulse-ring", status === "todo" && "border-border text-muted-foreground")}>
-                {status === "done" ? "✓" : i + 1}
-              </motion.div>
-              <p className={cn("mt-2 text-xs font-medium", status === "todo" ? "text-muted-foreground" : "text-foreground")}>{s.label}</p>
-              <p className="text-[10px] text-muted-foreground hidden xl:block">{counts[s.id] ?? s.hint}</p>
-            </li>
-          );
-        })}
-      </ol>
+    <div className="scroll-thin -mx-2 overflow-x-auto px-2 pb-1" tabIndex={0} role="group" aria-label="Pipeline stages">
+      <div className="relative min-w-[760px]">
+        <div aria-hidden className="absolute top-[22px] h-px bg-border" style={{ left: inset, right: inset }}>
+          <motion.div className="h-px origin-left bg-gradient-to-r from-primary via-trace to-pass" initial={{ scaleX: 0 }} animate={{ scaleX: progress }} transition={{ duration: 0.7, ease: EASE }} />
+        </div>
+        <ol className="relative grid" style={{ gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))` }}>
+          {STAGES.map((s, i) => {
+            const status = done && i <= cur ? "done" : i < cur ? "done" : i === cur ? "active" : "todo";
+            return (
+              <motion.li key={s.id} aria-current={status === "active" ? "step" : undefined} className="flex min-w-0 flex-col items-center px-1 text-center"
+                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: EASE, delay: i * 0.04 }}>
+                <div className={cn("z-10 flex size-11 items-center justify-center rounded-full border bg-background mono text-[11px] transition-colors duration-200",
+                  status === "done" && "border-pass bg-pass/10 text-pass", status === "active" && "pulse-ring border-primary text-primary", status === "todo" && "border-border text-muted-foreground")}>
+                  {status === "done" ? <Check aria-label="done" className="size-4" /> : i + 1}
+                </div>
+                <p className={cn("mt-2 text-xs font-medium", status === "todo" ? "text-muted-foreground" : "text-foreground")}>{s.label}</p>
+                <p className="hidden text-[10px] leading-tight text-balance text-muted-foreground tabular-nums xl:block">{counts[s.id] ?? s.hint}</p>
+              </motion.li>
+            );
+          })}
+        </ol>
+      </div>
     </div>
   );
 }
@@ -78,21 +87,25 @@ export function eventsToRows(events: PreflightEvent[], id: string, attacks: Summ
   return rows;
 }
 
+const DOT: Record<Row["tone"], string> = { fail: "bg-fail", pass: "bg-pass", pending: "bg-pending", trace: "bg-trace", checkpoint: "bg-checkpoint", muted: "bg-muted-foreground/50" };
+const EDGE: Record<Row["tone"], string> = { fail: "border-fail/40", pass: "border-pass/30", pending: "border-pending/40", trace: "border-trace/40", checkpoint: "border-checkpoint/40", muted: "border-border/60" };
+
 export function LiveFeed({ rows }: { rows: Row[] }) {
   const shown = [...rows].reverse().slice(0, 40);
+  if (!shown.length) return <EmptyState icon={Radio} title="No events yet" hint="Events appear here the moment the assessment writes them to the ledger." />;
   return (
     <ol className="space-y-1.5">
       <AnimatePresence initial={false}>
         {shown.map((r) => (
-          <motion.li key={r.key} layout initial={{ opacity: 0, x: -12, filter: "blur(4px)" }} animate={{ opacity: 1, x: 0, filter: "blur(0px)" }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
-            className={cn("rounded-lg border px-3 py-2 text-xs flex items-center gap-3 bg-card/70", r.tone === "fail" && "border-fail/40", r.tone === "pass" && "border-pass/30", r.tone === "pending" && "border-pending/40", r.tone === "trace" && "border-trace/40", r.tone === "checkpoint" && "border-checkpoint/40", r.tone === "muted" && "border-border/60")}>
-            <span className={cn("size-2 rounded-full shrink-0", r.tone === "fail" ? "bg-fail" : r.tone === "pass" ? "bg-pass" : r.tone === "pending" ? "bg-pending" : r.tone === "trace" ? "bg-trace" : r.tone === "checkpoint" ? "bg-checkpoint" : "bg-muted-foreground/50")} />
-            <Mono className="w-20 shrink-0 text-[10px] uppercase">{r.kind}</Mono>
+          <motion.li key={r.key} layout="position" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: EASE }}
+            className={cn("flex items-center gap-2.5 rounded-lg border bg-card/70 px-3 py-2 text-xs transition-colors duration-200 sm:gap-3", EDGE[r.tone])}>
+            <span aria-hidden className={cn("size-2 shrink-0 rounded-full", DOT[r.tone])} />
+            <Mono className="hidden w-[4.5rem] shrink-0 text-[10px] uppercase sm:block">{r.kind}</Mono>
             <div className="min-w-0 flex-1">
-              {r.href ? <Link href={r.href} className="hover:underline">{r.text}</Link> : <span>{r.text}</span>}
-              {r.sub && <p className="text-muted-foreground truncate">{r.sub}</p>}
+              {r.href ? <Link href={r.href} className="block truncate rounded-sm hover:underline">{r.text}</Link> : <span className="block truncate">{r.text}</span>}
+              {r.sub && <p className="truncate text-muted-foreground">{r.sub}</p>}
             </div>
-            <Mono className="shrink-0">{timeAgo(r.ts)}</Mono>
+            <Mono className="shrink-0 whitespace-nowrap">{timeAgo(r.ts)}</Mono>
           </motion.li>
         ))}
       </AnimatePresence>
@@ -109,10 +122,14 @@ export function AttackProgress({ s }: { s: Summary }) {
   const ids = Object.keys(s.attacks).filter((k) => s.attacks[k].tier === "P0").sort();
   return (
     <div>
-      <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium">attack matrix</p><Mono>{byAttack.size}/{planned && planned !== "P0" ? planned.split(",").length : total} attacks run · {runs.filter((r) => r.failed).length} succeeded</Mono></div>
-      <div className="grid grid-cols-10 xl:grid-cols-20 gap-1.5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1"><h2 className="text-sm font-medium">Attack matrix</h2><Mono>{byAttack.size}/{planned && planned !== "P0" ? planned.split(",").length : total} attacks run · {runs.filter((r) => r.failed).length} succeeded</Mono></div>
+      <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10 2xl:grid-cols-20">
         {ids.map((id) => { const v = byAttack.get(id); return (
-          <motion.div key={id} layout className={cn("h-9 rounded-md border flex items-center justify-center mono text-[11px]", !v ? "border-border text-muted-foreground" : v.fail ? "border-fail/50 bg-fail/15 text-fail" : "border-pass/50 bg-pass/15 text-pass")} animate={v ? { scale: [1, 1.08, 1] } : {}} transition={{ duration: 0.4 }}>{id}</motion.div>
+          <Tooltip key={id}>
+            <TooltipTrigger render={<motion.div tabIndex={0} animate={v ? { scale: [1, 1.06, 1] } : {}} transition={{ duration: 0.25, ease: "easeOut" }} />}
+              className={cn("flex h-9 items-center justify-center rounded-md border mono text-[11px] transition-colors duration-200", !v ? "border-border text-muted-foreground" : v.fail ? "border-fail/50 bg-fail/15 text-fail" : "border-pass/50 bg-pass/15 text-pass")}>{id}</TooltipTrigger>
+            <TooltipContent className="block"><p className="font-medium">{s.attacks[id].name}</p><p className="opacity-80">{v ? `${v.fail}/${v.n} runs succeeded` : "not run yet"}</p></TooltipContent>
+          </Tooltip>
         ); })}
       </div>
     </div>
@@ -120,26 +137,29 @@ export function AttackProgress({ s }: { s: Summary }) {
 }
 
 export function FixerLanes({ s, id }: { s: Summary; id: string }) {
-  if (!s.clusters.length) return null;
+  const lanes = s.clusters.filter((c) => !c.status.startsWith("merged_into"));
+  if (!lanes.length) return <EmptyState icon={Wrench} title="No fixers yet" hint="A lane opens for each failure cluster once its divergence step is known." />;
   return (
-    <div className="grid gap-3">
-      {s.clusters.filter((c) => !c.status.startsWith("merged_into")).map((c) => {
+    <Stagger className="grid gap-3">
+      {lanes.map((c) => {
         const a = c.attempts[c.attempts.length - 1];
         const running = c.status === "fixing" || a?.status === "running" || a?.status === "replaying";
         return (
-          <Link key={c.cluster_id} href={`/a/${id}/fixes/${c.cluster_id}`}>
-            <Card className="relative overflow-hidden border-border/60 h-full">
-              {running && <BorderBeam size={100} duration={5} colorFrom="oklch(0.8 0.14 200)" colorTo="oklch(0.72 0.17 300)" />}
-              <CardContent className="p-3 space-y-1.5">
-                <div className="flex items-center justify-between"><div className="flex gap-1">{c.attack_ids.map((x) => <Tone key={x} tone="fail">{x}</Tone>)}</div><Tone tone={c.status === "merged" ? "pass" : c.status === "await_approval" ? "pending" : c.status === "needs_human" ? "fail" : "muted"}>{c.status.replace(/_/g, " ")}</Tone></div>
-                <p className="text-xs font-medium truncate">{c.attack_name}</p>
-                {a?.replay ? <ReplayDots replay={a.replay} compact /> : <Mono>{a ? `attempt ${a.n} · ${a.status}` : "waiting for fixer"}</Mono>}
-              </CardContent>
-            </Card>
-          </Link>
+          <StaggerItem key={c.cluster_id}>
+            <Link href={`/a/${id}/fixes/${c.cluster_id}`} className={CARD_LINK}>
+              <Card className={cn(PANEL, PANEL_LINK, "relative h-full overflow-hidden")}>
+                {running && <BorderBeam size={100} duration={5} colorFrom="oklch(0.8 0.14 200)" colorTo="oklch(0.72 0.17 300)" />}
+                <CardContent className="space-y-1.5 p-3">
+                  <div className="flex items-start justify-between gap-2"><div className="flex min-w-0 flex-wrap gap-1">{c.attack_ids.map((x) => <Tone key={x} tone="fail">{x}</Tone>)}</div><StatusBadge status={c.status} /></div>
+                  <p className="truncate text-xs font-medium">{c.attack_name}</p>
+                  {a?.replay ? <ReplayDots replay={a.replay} compact /> : <Mono className="block truncate">{a ? `attempt ${a.n} · ${a.status}` : "waiting for fixer"}</Mono>}
+                </CardContent>
+              </Card>
+            </Link>
+          </StaggerItem>
         );
       })}
-    </div>
+    </Stagger>
   );
 }
 
