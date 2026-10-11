@@ -9,6 +9,7 @@ const D1 = process.env.D1_ASSESSMENT ?? "20261010-154713-174a";
 const REG = process.env.REGRESS_ASSESSMENT ?? "regress-20261010-172203-0cb4";
 const FIX = process.env.FIX_CLUSTER ?? "b2-retry-5988d4";
 const CLUSTER = process.env.CLUSTER ?? "b2-retry-5988d4";
+const REPLAY_CLUSTER = process.env.REPLAY_CLUSTER ?? "d1-watchlist-453a5d";
 const OUT = "public/clips";
 const SIZE = { width: 1920, height: 1080 };
 
@@ -20,7 +21,7 @@ const beats = [
   { name: "02-pipeline", url: `/a/${P0}/pipeline`, run: async (p) => { await wait(3500); await smoothScroll(p, 700); await wait(3000); } },
   { name: "03-clusters", url: `/a/${P0}/clusters`, run: async (p) => { await wait(3000); await p.click(`a[href$="/clusters/${CLUSTER}"]`); await wait(3500); await smoothScroll(p, 900); await wait(3000); } },
   { name: "04-fix", url: `/a/${P0}/fixes`, run: async (p) => { await wait(2500); await p.click(`a[href$="/fixes/${FIX}"]`); await wait(3500); await smoothScroll(p, 700); await wait(3000); } },
-  { name: "05-replay-proof", url: `/a/${D1}/fixes/d1-watchlist-453a5d`, run: async (p) => { await wait(4000); await smoothScroll(p, 300); await wait(2000); } },
+  { name: "05-replay-proof", url: `/a/${D1}/fixes/${REPLAY_CLUSTER}`, run: async (p) => { await wait(4000); await smoothScroll(p, 300); await wait(2000); } },
   { name: "06-regressions", url: `/a/${REG}/regressions`, run: async (p) => { await wait(4000); await smoothScroll(p, 300); await wait(2500); } },
   { name: "07-cost", url: `/a/${P0}/cost`, run: async (p) => { await wait(3500); await smoothScroll(p, 400); await wait(2500); } },
   { name: "08-before-after", url: `/a/${D1}`, run: async (p) => { await wait(4500); } },
