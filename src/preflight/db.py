@@ -220,6 +220,10 @@ def schema() -> list[dict]:
 
 # The after pass (VERIFY_AFTER) is written with kind='regression' and an `after-` run_id prefix; accept a literal kind too.
 _AFTER = "(kind = 'after' OR (kind = 'regression' AND run_id LIKE 'after-%'))"
+# An assessment that finishes twice (e.g. after `resume`) has two after-passes; only the newest run per seed counts.
+_LATEST_AFTER = f"""{_AFTER} AND NOT EXISTS (
+    SELECT 1 FROM runs n WHERE n.assessment_id = runs.assessment_id AND n.attack_id = runs.attack_id AND n.seed_id = runs.seed_id
+      AND (n.kind = 'after' OR (n.kind = 'regression' AND n.run_id LIKE 'after-%')) AND n.started_at > runs.started_at)"""
 
 
 def _one(c: sqlite3.Connection, sql: str, params: tuple) -> sqlite3.Row:
@@ -255,7 +259,7 @@ def stats(assessment_id: str | None = None) -> dict:
         return {
             "assessment_id": aid, "state": a["state"], "mode": a["mode"], "label": a["label"],
             "before": _runs(c, aid, "kind = 'attack'") or {"total": 0, "attack_succeeded": 0},
-            "after": _runs(c, aid, _AFTER),
+            "after": _runs(c, aid, _LATEST_AFTER),
             "clusters": {"total": _one(c, "SELECT COUNT(*) FROM clusters WHERE assessment_id = ?", (aid,))[0],
                          "by_status": _counts(c, "SELECT status, COUNT(*) FROM clusters WHERE assessment_id = ? GROUP BY status", (aid,))},
             "fixes": {"attempts": fx["attempts"], "approved": fx["approved"],

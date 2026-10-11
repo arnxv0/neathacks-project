@@ -4,7 +4,7 @@ import json, pathlib, time
 from .. import config
 from ..attacks import catalog
 from ..ledger import Ledger, list_assessments
-from ..report.report import scorecard
+from ..report.report import latest_per_seed, scorecard
 
 _cache: dict[str, tuple[float, dict]] = {}
 
@@ -46,7 +46,7 @@ def summary(aid: str) -> dict:
     attack_runs = led.runs(kind="attack")
     all_runs = led.runs()
     sc = scorecard(attack_runs, sp)
-    after_runs = [r for r in all_runs if r.run_id.startswith("after-")]
+    after_runs = latest_per_seed([r for r in all_runs if r.run_id.startswith("after-")])
     after = scorecard(after_runs, sp) if after_runs else None
     clusters = []
     for c in led.clusters():
