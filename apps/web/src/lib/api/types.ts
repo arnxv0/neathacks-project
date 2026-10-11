@@ -34,3 +34,33 @@ export type Summary = {
 };
 export type AssessmentRow = { assessment_id: string; state: string; mode: string; label: string | null; kind: string; started_at: string | null; runs: number; succeeded: number; clusters: number; target_commit: string | null };
 export type PreflightEvent = { seq: number; ts: number; type: string; [k: string]: any };
+
+// Targets: the built-in target plus sandbox targets (public GitHub repos). Mirrors web/routes/targets.py + sandbox/registry.py + sandbox/inspect.py.
+export type TargetStatus = "cloning" | "cloned" | "onboarding" | "needs_review" | "ready" | "unsupported" | "error";
+export type EntryPoint = { path: string; kind: string; detail?: string | null };
+/** Static inspection summary. Empty object for the built-in target and while a sandbox target is still cloning. */
+export type TargetStack = {
+  languages?: string[]; package_manager?: string | null; dependency_count?: number; frameworks?: string[]; servers?: string[];
+  entry_points?: EntryPoint[]; contract_native?: boolean; has_adapter?: boolean; dockerfile?: string | null; env_vars?: string[];
+  has_tests?: boolean; file_count?: number; is_agent_candidate?: boolean; notes?: string[];
+};
+export type Target = {
+  slug: string; kind: "sandbox" | "builtin"; name: string; url: string | null; path: string; status: TargetStatus;
+  find_only: boolean; trusted: boolean; contract_native: boolean; stack: TargetStack; notes: string[];
+  last_error: string | null; error_code: string | null;
+  /** built-in only: its preflight.yaml was found on disk */
+  available?: boolean;
+  /** sandbox only */
+  busy?: boolean; owner?: string; repo?: string; cloned_at?: string | null; head_sha?: string | null; approved_at?: string | null;
+  manifest_path?: string | null; fix_base_sha?: string | null; updated_at?: string | null;
+};
+export type TargetRuntime = { running: boolean; mode: string | null; port: number | null; container: string | null; docker_available: boolean };
+export type TargetDetail = Target & {
+  manifest: string | null; onboard_patch: string | null; brief: string | null; fixes_patch?: string | null;
+  onboard_log_tail?: string | null; runtime: TargetRuntime | null;
+};
+export type TargetsList = { targets: Target[]; docker_available: boolean; sandbox_root: string };
+/** `manifest.sandbox` of an assessment that ran against a sandbox target. */
+export type SandboxMeta = { slug: string; url: string; mode: string; container: string | null };
+export type SkippedAttack = { attack_id: string; reason: string };
+export type StartBody = { mode: string; attacks?: string; seeds?: number; no_fix?: boolean; target?: string; allow_fix?: boolean };

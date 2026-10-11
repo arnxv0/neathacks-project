@@ -145,12 +145,50 @@ export function RunSkeleton() {
   );
 }
 
-/** Whole-shell placeholder while the assessment layout suspends. */
-export function ShellSkeleton() {
+/** Targets list: header with the Add button, then cards shaped like a target card (name + badge, chips, meta row, action). */
+export function TargetsSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 basis-64 space-y-2"><Skeleton className="h-6 w-28" /><Skeleton className="h-4 w-[30rem] max-w-full" /></div>
+        <Skeleton className="h-8 w-36" />
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {times(count).map((i) => (
+          <div key={i} className={cn(box, "space-y-3 p-4")}>
+            <div className="flex items-center justify-between gap-3"><Skeleton className="h-5 w-48 max-w-[60%]" /><Skeleton className="h-5 w-20" /></div>
+            <div className="flex flex-wrap gap-1.5">{times(4).map((j) => <Skeleton key={j} className="h-5 w-16" />)}</div>
+            <div className="flex gap-3"><Skeleton className="h-3 w-16" /><Skeleton className="h-3 w-24" /></div>
+            <div className="flex items-center justify-between pt-1"><Skeleton className="h-5 w-20" /><Skeleton className="h-8 w-28" /></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Target detail: breadcrumbs + title, the five-step flow, the action panel, the detected stack. */
+export function TargetDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <HeaderSkeleton crumbs />
+      <div className={cn(box, "flex justify-between gap-2 overflow-hidden p-5")}>
+        {times(5).map((i) => <div key={i} className="flex flex-1 flex-col items-center gap-2"><Skeleton className="size-10 rounded-full" /><Skeleton className="h-3 w-14" /></div>)}
+      </div>
+      <div className={cn(box, "space-y-3 p-5")}><Skeleton className="h-5 w-56 max-w-full" /><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-3/4" /><Skeleton className="h-8 w-32" /></div>
+      <div className={cn(box, "grid gap-5 p-5 sm:grid-cols-2")}>
+        {times(4).map((i) => <div key={i} className="space-y-2"><Skeleton className="h-3 w-24" /><div className="flex flex-wrap gap-1.5">{times(3).map((j) => <Skeleton key={j} className="h-5 w-20" />)}</div></div>)}
+      </div>
+    </div>
+  );
+}
+
+/** Whole-shell placeholder while the assessment layout suspends. `children` replaces the default page skeleton. */
+export function ShellSkeleton({ children }: { children?: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh">
-      <div className="hidden w-60 shrink-0 border-r border-sidebar-border bg-sidebar p-3 lg:block"><Skeleton className="mb-6 h-8 w-32" />{times(6).map((i) => <Skeleton key={i} className="mb-2 h-8" />)}</div>
-      <div className="min-w-0 flex-1"><div className="h-14 border-b border-border" /><div className="p-4 sm:p-6"><ScorecardSkeleton /></div></div>
+      <div className="hidden w-60 shrink-0 border-r border-sidebar-border bg-sidebar p-3 lg:block"><Skeleton className="mb-6 h-8 w-32" />{times(7).map((i) => <Skeleton key={i} className="mb-2 h-8" />)}</div>
+      <div className="min-w-0 flex-1"><div className="h-14 border-b border-border" /><div className="p-4 sm:p-6">{children ?? <ScorecardSkeleton />}</div></div>
     </div>
   );
 }
