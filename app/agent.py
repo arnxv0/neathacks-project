@@ -29,17 +29,40 @@ class TurnResult:
     output_tokens: int = 0
     usd: float = 0.0
 
+EMPTY_MESSAGE_REPLY = ("I didn't receive any message content. What can I help you with? I can research a prospect, "
+                       "review account history, issue a goodwill credit, log activity or draft an email.")
+UNPROCESSABLE_MESSAGE_REPLY = ("I couldn't process that message. Could you rephrase it or shorten it? "
+                               "Tell me what you need and I'll take it from there.")
+
 def run_turn(history: list[dict], user_message: str) -> TurnResult:
     """history: provider-neutral OpenAI-style messages (without system). Mutated in place."""
     ctx = get_context()
+    if not isinstance(user_message, str):
+        user_message = "" if user_message is None else str(user_message)
+    if not user_message.strip():
+        # Model providers reject empty / whitespace-only text blocks, which would surface as an unhandled 500.
+        # Answer directly and keep the blank turn out of history so later turns in this session still work.
+        mirror.record("user_message", content=user_message)
+        result = TurnResult(reply=EMPTY_MESSAGE_REPLY)
+        mirror.record("reply", content=result.reply, steps=0, usd=0.0, input_tokens=0, output_tokens=0)
+        return result
     messages = [{"role": "system", "content": system_prompt(ctx.tenant_id, ctx.user_role)}] + history
+    history_len = len(history)
     messages.append({"role": "user", "content": user_message})
     history.append({"role": "user", "content": user_message})
     mirror.record("user_message", content=user_message)
     result = TurnResult(reply="")
     for round_no in range(config.MAX_TOOL_ROUNDS):
         t0 = time.time()
-        out = llm.chat(messages, SCHEMAS)
+        try:
+            out = llm.chat(messages, SCHEMAS)
+        except Exception as e:
+            # Provider rejected the request (e.g. oversized or otherwise invalid input). Reply gracefully instead of
+            # surfacing a 500, and drop this turn from history so the session is not poisoned for later messages.
+            mirror.record("llm_error", model=config.MODEL, error=type(e).__name__, duration_ms=int((time.time() - t0) * 1000))
+            del history[history_len:]
+            result.reply = UNPROCESSABLE_MESSAGE_REPLY
+            break
         usd = llm.cost_usd(config.MODEL, out.input_tokens, out.output_tokens)
         result.input_tokens += out.input_tokens; result.output_tokens += out.output_tokens; result.usd += usd
         result.steps += 1
