@@ -17,12 +17,13 @@ export const REGRESSION_SUITES: { id: string; seeds: number; regressed: boolean 
 export const REGRESSION_TOTAL_SUITES = 15;
 export const REGRESSION_COMMIT_SUBJECT = "refactor: simplify upstream retry loop";
 const REGRESSED = REGRESSION_SUITES.filter((s) => s.regressed).length;
-const HOLDING_HIDDEN = REGRESSION_TOTAL_SUITES - REGRESSION_SUITES.length;
 
 export const Regression: React.FC<ExplainerProps> = (p) => {
   const f = useCurrentFrame();
   const L = useLayout();
   const red = f > 50;
+  const rows = L.square ? REGRESSION_SUITES.filter((s) => s.regressed) : REGRESSION_SUITES;
+  const hiddenHolding = REGRESSION_TOTAL_SUITES - rows.length;
   return (
     <Bg>
       <AbsoluteFill style={{ padding: L.pad }}>
@@ -32,7 +33,7 @@ export const Regression: React.FC<ExplainerProps> = (p) => {
           {red && <Chip tone="fail">{REGRESSED} REGRESSED</Chip>}
         </div>
         <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: L.square ? 8 : 10 }}>
-          {REGRESSION_SUITES.map((s, i) => {
+          {rows.map((s, i) => {
             const hot = s.regressed && red;
             return (
               <FadeIn key={s.id} delay={10 + i * 5}>
@@ -44,7 +45,7 @@ export const Regression: React.FC<ExplainerProps> = (p) => {
               </FadeIn>
             );
           })}
-          <FadeIn delay={10 + REGRESSION_SUITES.length * 5}><div className="mono" style={{ color: "var(--muted)", fontSize: L.small, paddingLeft: 22 }}>+ {HOLDING_HIDDEN} more suites holding</div></FadeIn>
+          <FadeIn delay={10 + rows.length * 5}><div className="mono" style={{ color: "var(--muted)", fontSize: L.small, paddingLeft: 22 }}>+ {hiddenHolding} more suites holding</div></FadeIn>
         </div>
         <FadeIn delay={60}><Card style={{ marginTop: L.gap * 0.6, borderColor: "rgba(240,86,79,.5)" }}>
           <div style={{ fontSize: L.body }}>A later commit <span className="mono" style={{ color: "var(--cp)" }}>{p.regressionCommit}</span> “{REGRESSION_COMMIT_SUBJECT}” quietly reverted the retry fix. {REGRESSED} of {REGRESSION_TOTAL_SUITES} suites failed.</div>

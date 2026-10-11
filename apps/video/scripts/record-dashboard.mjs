@@ -30,7 +30,9 @@ const beats = [
 
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--force-device-scale-factor=1"] });
-for (const b of beats) {
+// ONLY=01-scorecard,08-before-after re-records just those beats
+const only = process.env.ONLY ? process.env.ONLY.split(",") : null;
+for (const b of beats.filter((x) => !only || only.includes(x.name))) {
   const tmp = join(OUT, `_tmp_${b.name}`); rmSync(tmp, { recursive: true, force: true });
   const ctx = await browser.newContext({ viewport: SIZE, deviceScaleFactor: 1, recordVideo: { dir: tmp, size: SIZE }, colorScheme: "dark" });
   const page = await ctx.newPage();
