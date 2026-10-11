@@ -29,7 +29,7 @@ class ChatIn(BaseModel):
     session_id: str
     tenant_id: str = "tenant_a"
     user_role: str = "rep"
-    message: str
+    message: str = ""   # missing/empty content gets a graceful "what do you need?" reply, not a 4xx/5xx
 
 class Usage(BaseModel):
     input_tokens: int
@@ -59,7 +59,13 @@ def _turn(body: ChatIn, headers: dict[str, str]) -> ChatOut:
                                 fault=headers.get("x-preflight-fault", ""), fixture=headers.get("x-preflight-fixture", ""),
                                 target_version=config.version(), tenant_id=body.tenant_id) as span:
                 trace_id = tracing.current_trace_id(span)
-                res = agent.run_turn(history, body.message)
+                try:
+                    res = agent.run_turn(history, body.message)
+                except Exception as e:
+                    # Last-resort backstop: a turn must never surface as a 5xx or a stack trace to the caller.
+                    mirror.record("turn_error", error=type(e).__name__)
+                    res = agent.TurnResult(reply=agent.UNPROCESSABLE_MESSAGE_REPLY)
+                    mirror.record("reply", content=res.reply, steps=0, usd=0.0, input_tokens=0, output_tokens=0)
     neatlogs.flush()
     return ChatOut(reply=res.reply, tool_calls=res.tool_calls, steps=res.steps,
                    usage=Usage(input_tokens=res.input_tokens, output_tokens=res.output_tokens, usd=round(res.usd, 6)),
