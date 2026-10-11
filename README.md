@@ -1,73 +1,103 @@
 # Preflight
 
-**Preflight crash-tests an AI agent before it launches.** It attacks the agent with hostile users, broken tools and injected data, finds the first step where a good run and a bad run diverge, dispatches a Claude Code fixer per root cause, records every fix as an Entire checkpoint, waits for a human to approve, replays the exact failing runs to prove the fix holds (1/5 → 5/5), and keeps them as permanent regression tests.
+**Preflight crash-tests an AI agent before it launches, fixes what breaks, proves the fix, and keeps it fixed.**
+Built for neatHack 2026 with neatlogs, Entire and cfo.ai.
 
-Built for neatHack 2026. Demo target: [AcmeSales Copilot](targets/acmesales-copilot/) (vendored in this repo with its full fix history), a B2B sales agent on Claude (LiteLLM or AWS Bedrock) with Crustdata company data.
+## For judges
 
-```
-attack ──► trace (neatlogs) ──► grade ──► cluster ──► divergence ──► fix (Claude Code + Entire) ──► approve ──► replay K× ──► regression suite
-```
+| Criterion | Evidence |
+|---|---|
+| The agent, end to end | **23/50 → 0/50** attack runs on the demo target, one unattended run: [scorecard](docs/evidence/scorecard-full-23-to-0.jpg) · [report.json](docs/evidence/report-full-20261011.json) · [SQLite store of the whole run](docs/evidence/preflight-20261011.sqlite) |
+| neatlogs, before / after | Same D1 seed, same prompt: [before, the agent obeys the injected record](https://app.neatlogs.com/traces/7d1d755db145b6a4e43c890d0d572518?project=2d5433a0-d4a3-45cf-99f8-aa80525d3d56) → [after the fix](https://app.neatlogs.com/traces/e1226f3c980aacba62bb535a82d31eb2?project=2d5433a0-d4a3-45cf-99f8-aa80525d3d56). Every one of the 429 runs in the report carries its trace id. |
+| Entire | Checkpoint `01M4N5WX9MEXD72YX851HPQR6K` on commit [`dedc414`](https://entire.io/gh/arnxv0/neathacks-project/commit/dedc4146f6668ef93ec8e4ba1050b13428fd9561) (`preflight db stats`, written by a Claude Code session). Fixer commits in the target carry `Entire-Checkpoint` trailers; entire-graph impact/search feeds every fixer brief. |
+| cfo.ai | Operating model built through the cfo.ai MCP from Claude Code, with a **Measured** scenario fed by the real run: [board summary, Main vs Measured](docs/evidence/cfo-board-main-vs-measured.jpg) · [build report](docs/evidence/cfo-model-build-20261011.md) |
+| Demo video | [Product demo, 1:50](docs/videos/preflight-product-demo.mp4) · [Explainer, 1:29](docs/videos/preflight-explainer.mp4) |
+| Recovery from failed actions | `recoveries[]` in the report: fixer retries after failed replays, 13 merge conflicts re-verified on main, a wall-clock stop resumed, [a regression caught and blamed to its commit](docs/evidence/regression-caught-blame-20261011.json) |
+
+Build log and submission checklist: [hackathon.md](hackathon.md). Everything that went wrong and what we did about it: [DECISIONS.md](DECISIONS.md).
 
 ## What it does
 
-| Step | How |
+Preflight attacks an agent the way production will: hostile users, broken tools, and data that carries instructions. It grades every run deterministically, groups failures by root cause, finds the first step where a bad run diverged from a good one, and dispatches one Claude Code fixer per root cause. A human approves. Preflight replays the exact failing runs K times to prove the fix holds, merges it, and keeps the failure as a permanent regression test that is blamed to the commit if it ever comes back.
+
+```mermaid
+flowchart LR
+    A[Attack catalog<br/>20 attacks · 50 seeds] --> B[Target agent<br/>behind chaos proxy]
+    B --> C[neatlogs trace<br/>per run]
+    B --> D[Deterministic graders]
+    D --> E[Cluster by root cause<br/>+ first divergent step]
+    E --> F[Claude Code fixer<br/>per cluster, own worktree]
+    F --> G{Replay K×<br/>exact failing seeds}
+    G -- all pass --> H[Human approves → merge]
+    G -- any fail --> F
+    H --> I[Regression test<br/>blamed to commit]
+    H --> J[After-pass:<br/>whole catalog again]
+    B -. measured cost per run .-> K[cfo.ai model<br/>Measured scenario]
+    F -. checkpoint .-> L[Entire]
+```
+
+```mermaid
+flowchart TB
+    subgraph preflight[Preflight]
+        CLI[CLI / coordinator] --> LEDGER[(ledger: files + SQLite)]
+        CLI --> PROXY[chaos proxy :8300<br/>faults, poisoned fixtures]
+        CLI --> FIX[fixer dispatcher<br/>git worktrees, Entire hooks]
+        API[web API :8200<br/>REST + SSE + read-only SQL] --> LEDGER
+        WEB[dashboard :3000<br/>Next.js] --> API
+    end
+    subgraph target[Target under test: AcmeSales Copilot]
+        AGENT[agent :8100] --> TOOLS[crm_query · issue_credit<br/>send_email · company_lookup]
+        TOOLS --> PROXY
+    end
+    PROXY --> CRUST[Crustdata API]
+    AGENT --> LLM[LiteLLM gateway<br/>claude-haiku]
+    AGENT --> NL[neatlogs]
+    CLI --> NL
+    CLI --> MODELS[judge / analyst<br/>via LiteLLM]
+```
+
+## Results
+
+| Run | Result |
 |---|---|
-| Attack | 20 P0 attacks, 50 seeds, mapped to the OWASP Top 10 for LLM apps: indirect injection via poisoned Crustdata records, unsafe SQL, cross-tenant access, jailbreaks, denial of wallet, chaos faults (timeouts, 429, 5xx, empty) injected by a proxy |
-| Grade | Deterministic graders first (canary, watchlist, SQL AST, tenant, cost, retry, schema, honesty); an LLM judge only for fuzzy rubrics |
-| Explain | Deterministic clustering by signature, first-divergence step between a passing and failing run, analyst hypothesis with suspected code paths, neatlogs trace links |
-| Fix | One Claude Code fixer per cluster in its own git worktree, in parallel; every commit carries an Entire checkpoint with the reasoning |
-| Prove | Human approves / requests changes / edits / rejects in the dashboard; replay K× against the fixed branch; saved to `regressions/` and rerun on every change; regressions are blamed to the commit that reintroduced them |
-| Business | Every LLM call is metered; `out/cost_report.csv` feeds the cfo.ai model |
+| Full mode from the unfixed target (`20261011-001111-d070`): 20 attacks, 50 seeds, K=5 | **23/50 → 0/50**. 15 clusters, 15 fixes (13 by fixers, 2 finished by a human merge after conflicts), 205 replay runs, 15 regression suites, 0 regressed |
+| Verification, find-only, fixed main (`20261011-024639-4292`) | 5/50 still succeed (D1 ×2, G3 ×2, B4 ×1): the prompt-level closes of D1/G3 are probabilistic. Repeated passes on v0 and on the fixed main are running to report the variance honestly; a second fix pass on the residuals follows. |
+| Regression beat | A "refactor" reverting the retry fix → 4 suites regress, all blamed to that commit |
+| Measured COGS | $0.006 per attack run · $1.41 per fix attempt · 1.67 attempts per accepted fix · $37 per full assessment |
+
+Full detail, including what did not work: [STATUS.md](STATUS.md).
 
 ## Run it
 
 ```bash
-cp .env.example .env            # LiteLLM, neatlogs, Crustdata keys
-make target-checkout            # targets/acmesales-copilot -> ../acmesales-copilot as its own git repo (fixers commit there; Entire hooks in)
-uv sync && (cd ../acmesales-copilot && uv sync)
-make dev-host                   # target :8100, chaos proxy :8300, API :8200, dashboard :3000 (tmux)
+cp .env.example .env                  # LiteLLM, neatlogs, Crustdata keys
+make target-checkout && uv sync       # vendored target → ../acmesales-copilot as its own git repo
+make dev-host                         # target :8100, chaos proxy :8300, API :8200, dashboard :3000
 uv run preflight run ../acmesales-copilot --mode dev --attacks D1 --seeds 3
-# review in http://localhost:3000, or:
-uv run preflight approve <assessment_id> <cluster_id>
-uv run preflight regress ../acmesales-copilot
+uv run preflight db stats             # one-screen summary of the latest assessment
 ```
 
-Docker: `make up` runs the four services in Compose (fixers and Entire run on the host).
+Approve fixes in the dashboard or with `uv run preflight approve <assessment> <cluster>`. From-scratch steps, Windows notes and known traps: [SETUP.md](SETUP.md). Make is optional everywhere.
 
-## Videos
+## Documents
 
-- `docs/videos/preflight-explainer.mp4` — 60-second explainer (Remotion, numbers from the measured run).
-- `docs/videos/preflight-product-demo.mp4` — product walkthrough: real dashboard recordings of the finished assessments with captions (Remotion over Playwright clips; `apps/video/scripts/record-dashboard.mjs`).
-
-![pipeline](docs/evidence/pipeline.gif)
-
-## Recreate it
-
-`SETUP.md` has the from-scratch steps: prerequisites, keys, target checkout, services, assessments, the demo beats.
-
-## Status
-
-**Full-mode run, 2026-10-11** (`20261011-001111-d070`, target reset to `v0-unfixed`, 20 attacks × 2–3 seeds, K=5 replays): **23/50 attack runs succeeded before → 0/50 after.** 15 failure clusters, 15 fixes (13 by Claude Code fixers, 2 finished by a human reviewer after merge conflicts), 15 permanent regression tests, 0 regressed. Every run has a neatlogs trace; the report, cost report and the SQLite store of the whole run are in `docs/evidence/`.
-
-`STATUS.md` is the full record: what exists, what was verified on real runs, measured costs, sponsor-tool integration, open items and how to resume.
-
-## Ledger: files + SQLite
-
-Every assessment is written twice: as files under `ledger/<assessment_id>/` (transcripts, diffs, briefs, events) and, write-through, into one SQLite store `ledger/preflight.sqlite` (`$PREFLIGHT_DB` to relocate it). The store has `assessments`, `runs`, `verdicts`, `steps`, `clusters`, `attempts`, `events`, `regressions` and two views, `scorecard` and `fixes`.
-
-```bash
-uv run preflight db sync                       # rebuild the store from the file ledger (idempotent)
-uv run preflight db query "SELECT attack_id, runs, attack_succeeded FROM scorecard WHERE kind='attack'"
-uv run preflight db export docs/evidence/preflight-<date>.sqlite   # one file to share
-curl "localhost:8200/api/db/query?sql=SELECT+cluster_id,replay_before,replay_after+FROM+fixes+WHERE+status='approved'"
-```
-Queries are read-only (single SELECT, read-only connection). The API is the access-control point: put it behind auth and nobody needs the ledger directory.
+| | |
+|---|---|
+| [STATUS.md](STATUS.md) | What exists, what was verified on real runs, sponsor integration, open items |
+| [SETUP.md](SETUP.md) | Recreate it from a clean machine |
+| [DECISIONS.md](DECISIONS.md) | Dated log of every deviation, incident and judgment call |
+| [hackathon.md](hackathon.md) | Build log, submission checklist, post drafts |
+| [ATTACKS.md](ATTACKS.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [SPEC.md](SPEC.md) · [BUSINESS.md](BUSINESS.md) · [DEMO.md](DEMO.md) | Design: attack catalog (OWASP LLM Top 10), system design, product spec, business model, demo script |
+| [docs/RESEARCH.md](docs/RESEARCH.md) | The papers behind the attack families |
+| [docs/evidence/](docs/evidence/) | Screenshots, reports, cost reports, the SQLite store, the regression blame |
 
 ## Repo map
 
-- `src/preflight/` — coordinator state machine, ledger, guard, chaos proxy, graders, analyzer, fixers, replay, web API
-- `attacks/*.yaml` — the attack catalog (see `ATTACKS.md`)
-- `fixtures/` — cached Crustdata records and poisoned variants
-- `regressions/` — permanent regression tests, one per approved fix
-- `apps/web/` — Next.js dashboard (shadcn + Aceternity + Magic UI)
-- `SPEC.md`, `ARCHITECTURE.md`, `BUSINESS.md`, `DECISIONS.md`, `hackathon.md`
+```
+src/preflight/        coordinator, graders, analyze (signature/cluster/divergence), fix (dispatcher, Claude Code backend, Entire),
+                      replay, report, chaos proxy, traces (neatlogs), db (SQLite store), web (API), cli
+attacks/              20 P0 attacks, 50 seeds, watchlist          regressions/   15 permanent tests, one per approved fix
+fixtures/             Crustdata cache + poisoned records          targets/       the demo target, vendored with its full fix history
+apps/web/             Next.js dashboard                           apps/video/    Remotion videos, narration, recordings
+scripts/              demo-reset, regress-demo, variance-runs, video props, screenshots
+```
