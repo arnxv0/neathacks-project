@@ -88,3 +88,12 @@ def test_cli_json_and_empty_store(store):
     assert json.loads(res.output)["before"] == {"total": 3, "attack_succeeded": 2}
     res = runner.invoke(app, ["db", "stats"])
     assert res.exit_code == 0 and "before" in res.output and "attack_succeeded=2" in res.output
+
+
+def test_stats_after_counts_only_the_latest_pass_per_seed(store):
+    db.upsert_assessment(AID, {"state": "DONE", "mode": "full"})
+    db.upsert_run(_run(f"A1-s1-{AID}", "attack", True))
+    first = _run(f"after-A1-s1-old-{AID}", "regression", True); first.started_at = "2026-10-11T08:19:00"
+    second = _run(f"after-A1-s1-new-{AID}", "regression", False); second.started_at = "2026-10-11T08:33:00"
+    db.upsert_run(first); db.upsert_run(second)
+    assert db.stats(AID)["after"] == {"total": 1, "attack_succeeded": 0}

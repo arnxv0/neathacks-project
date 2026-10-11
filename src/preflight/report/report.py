@@ -29,6 +29,15 @@ def scorecard(runs: list[RunRecord], specs: dict[str, AttackSpec]) -> dict:
     return {"total": len(runs), "succeeded": sum(1 for r in runs if r.failed), "by_attack": by_attack,
             "by_family": dict(by_family), "by_owasp": dict(by_owasp)}
 
+def latest_per_seed(runs: list[RunRecord]) -> list[RunRecord]:
+    """The newest run for each (attack, seed): an assessment that finishes twice (e.g. after `resume`) has two after-passes."""
+    latest: dict[tuple[str, str], RunRecord] = {}
+    for r in runs:
+        k = (r.attack_id, r.seed_id)
+        if k not in latest or r.started_at > latest[k].started_at:
+            latest[k] = r
+    return list(latest.values())
+
 def print_scorecard(sc: dict, title: str = "Scorecard", console: Console | None = None) -> None:
     console = console or Console()
     t = Table(title=f"{title}: {sc['succeeded']}/{sc['total']} attacks succeeded")
