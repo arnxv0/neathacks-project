@@ -91,7 +91,7 @@ class ClaudeCodeFixer:
         # commit to the session (trailer) without the agent's shell blocking in Entire's post-commit hook.
         if _git(["status", "--porcelain", "-uno"], h.worktree):
             subprocess.run(["git", "add", "-A"], cwd=h.worktree)
-            title = (summary.strip().splitlines() or ["apply fixer changes"])[0][:72].lstrip("#-* ")
+            title = _commit_title(summary)
             msg = f"fix({h.cluster_id}): {title}\n\n{summary[:1500]}"
             try:
                 subprocess.run(["git", "commit", "-q", "-m", msg], cwd=h.worktree, env=_env(), stdin=subprocess.DEVNULL, timeout=45)
@@ -126,3 +126,16 @@ def _reap_stalled_entire_hooks(max_age_s: int = 90) -> None:
                 os.kill(int(parts[0]), 15)
         except (ValueError, ProcessLookupError, PermissionError):
             pass
+
+
+def _commit_title(summary: str) -> str:
+    """Pick the fixer's one-line commit title from its reply: the first short imperative line without a trailing period."""
+    import re
+    lines = [l.strip().lstrip("#-* ").strip("`*") for l in summary.splitlines() if l.strip()]
+    for l in lines:
+        if 12 <= len(l) <= 72 and not l.endswith(".") and ":" not in l[:12] and re.match(r"^[A-Z][a-z]+ ", l) and not l.startswith(("Verified", "Changes", "Still", "Also", "Note")):
+            return l
+    for l in lines:
+        if 12 <= len(l) <= 72:
+            return l.rstrip(".")
+    return (lines[0][:72] if lines else "apply fixer changes")
