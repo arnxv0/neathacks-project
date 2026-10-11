@@ -66,6 +66,13 @@ def connect(db: pathlib.Path | None = None, readonly: bool = False) -> sqlite3.C
     p.parent.mkdir(parents=True, exist_ok=True)
     if readonly:
         conn = sqlite3.connect(f"file:{p}?mode=ro", uri=True, timeout=30)
+        try:
+            conn.execute("SELECT 1 FROM sqlite_master LIMIT 1")
+        except sqlite3.OperationalError:
+            # A WAL store with no live -shm (an export, or no writer open): a mode=ro handle cannot create it and every
+            # read fails with "unable to open database file". Open normally instead; query_only still refuses every write.
+            conn.close()
+            conn = sqlite3.connect(p, timeout=30)
         conn.execute("PRAGMA query_only = 1")
     else:
         conn = sqlite3.connect(p, timeout=30, check_same_thread=False)
@@ -209,3 +216,52 @@ def query(sql: str, params: tuple = (), limit: int = 500) -> list[dict]:
 def schema() -> list[dict]:
     with connect(readonly=True) as c:
         return [dict(r) for r in c.execute("SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY type, name")]
+
+
+# The after pass (VERIFY_AFTER) is written with kind='regression' and an `after-` run_id prefix; accept a literal kind too.
+_AFTER = "(kind = 'after' OR (kind = 'regression' AND run_id LIKE 'after-%'))"
+
+
+def _one(c: sqlite3.Connection, sql: str, params: tuple) -> sqlite3.Row:
+    return c.execute(sql, params).fetchone()
+
+
+def _counts(c: sqlite3.Connection, sql: str, params: tuple) -> dict[str, int]:
+    """`SELECT key, COUNT(*) ... GROUP BY key` -> {key: n}."""
+    return {str(r[0] or "unknown"): r[1] for r in c.execute(sql, params)}
+
+
+def _runs(c: sqlite3.Connection, aid: str, where: str, keys: tuple[str, str] = ("total", "attack_succeeded")) -> dict | None:
+    """{total, failed} over the runs matching `where`, or None when there are none."""
+    r = _one(c, f"SELECT COUNT(*), COALESCE(SUM(failed), 0) FROM runs WHERE assessment_id = ? AND {where}", (aid,))
+    return dict(zip(keys, (r[0], r[1]))) if r[0] else None
+
+
+def stats(assessment_id: str | None = None) -> dict:
+    """At-a-glance summary of one assessment (default: the most recently updated). Read-only; raises LookupError if absent."""
+    if not path().exists():
+        raise LookupError(f"no assessments: store {path()} does not exist (run `preflight db sync`)")
+    with connect(readonly=True) as c:
+        if assessment_id is None:
+            a = _one(c, "SELECT assessment_id, state, mode, label FROM assessments ORDER BY updated_at DESC LIMIT 1", ())
+        else:
+            a = _one(c, "SELECT assessment_id, state, mode, label FROM assessments WHERE assessment_id = ?", (assessment_id,))
+        if a is None:
+            raise LookupError(f"no assessment {assessment_id!r} in {path()}" if assessment_id else f"no assessments in {path()}")
+        aid = a["assessment_id"]
+        fx = _one(c, """SELECT COUNT(*) AS attempts, COALESCE(SUM(status = 'approved'), 0) AS approved, ROUND(COALESCE(SUM(cost_usd), 0), 4) AS usd
+                        FROM attempts WHERE assessment_id = ?""", (aid,))
+        rg = _one(c, "SELECT COUNT(*) AS suites, COALESCE(SUM(passed = 0), 0) AS regressed FROM regressions WHERE assessment_id = ?", (aid,))
+        return {
+            "assessment_id": aid, "state": a["state"], "mode": a["mode"], "label": a["label"],
+            "before": _runs(c, aid, "kind = 'attack'") or {"total": 0, "attack_succeeded": 0},
+            "after": _runs(c, aid, _AFTER),
+            "clusters": {"total": _one(c, "SELECT COUNT(*) FROM clusters WHERE assessment_id = ?", (aid,))[0],
+                         "by_status": _counts(c, "SELECT status, COUNT(*) FROM clusters WHERE assessment_id = ? GROUP BY status", (aid,))},
+            "fixes": {"attempts": fx["attempts"], "approved": fx["approved"],
+                      "by_author": _counts(c, "SELECT author, COUNT(*) FROM attempts WHERE assessment_id = ? GROUP BY author", (aid,)),
+                      "total_cost_usd": fx["usd"]},
+            "replays": _runs(c, aid, "kind = 'replay'", ("runs", "failed")) or {"runs": 0, "failed": 0},
+            "regressions": {"suites": rg["suites"], "regressed": rg["regressed"]},
+            "recoveries": _one(c, "SELECT COUNT(*) FROM events WHERE assessment_id = ? AND type = 'recovery'", (aid,))[0],
+        }

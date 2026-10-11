@@ -136,6 +136,31 @@ def db_query(sql: str, as_json: bool = typer.Option(False, "--json")):
         t.add_row(*[str(v)[:80] if v is not None else "" for v in r.values()])
     console.print(t)
 
+def _fmt(v) -> str:
+    if v is None:
+        return "-"
+    if isinstance(v, dict):
+        return ", ".join(f"{k}={_fmt(x)}" for k, x in v.items()) or "-"
+    return str(v)
+
+@db_app.command("stats")
+def db_stats(assessment_id: str = typer.Argument(None, help="default: the most recently updated assessment"),
+             as_json: bool = typer.Option(False, "--json")):
+    """One-screen summary of an assessment: before/after scorecard, clusters, fixes, replays, regressions, recoveries."""
+    import json as _json, sqlite3
+    from rich.table import Table
+    from . import db
+    try:
+        s = db.stats(assessment_id)
+    except (LookupError, sqlite3.OperationalError) as e:
+        console.print(f"[red]{e}"); raise typer.Exit(1)
+    if as_json:
+        print(_json.dumps(s, indent=2, default=str)); return
+    t = Table("metric", "value", title=s["assessment_id"], show_lines=False)
+    for k, v in s.items():
+        t.add_row(k, _fmt(v))
+    console.print(t)
+
 @db_app.command("path")
 def db_path():
     from . import db
