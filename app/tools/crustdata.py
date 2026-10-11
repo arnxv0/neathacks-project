@@ -3,7 +3,7 @@ from __future__ import annotations
 import neatlogs
 from .. import config, mirror
 from ..context import forward_headers
-from ..retry import post_with_retry
+from ..retry import ATTEMPTS, post_with_retry
 
 FIELDS = ["basic_info", "headcount", "funding"]
 
@@ -15,7 +15,11 @@ def company_lookup(domain: str) -> str:
         resp = post_with_retry(f"{config.CRUSTDATA_BASE_URL}/company/enrich", json={"domains": [domain], "fields": FIELDS},
                                headers=headers)
     except Exception as e:
-        return f"Lookup for {domain} failed after retries: {type(e).__name__}. Proceed with what you know about the company."
+        return (f"LOOKUP FAILED: the company data provider did not return a record for {domain} "
+                f"after {ATTEMPTS} attempts ({type(e).__name__}). No company data is available from this tool. "
+                "Tell the rep plainly that the lookup failed and suggest trying again later. "
+                "Do not state headcount, funding, revenue or other company figures from memory or from "
+                "other sources as if they came from this lookup.")
     try:
         data = resp.json()
     except Exception:
@@ -27,8 +31,8 @@ def format_record(domain: str, data) -> str:
     if isinstance(data, list) and data:
         matches = data[0].get("matches", [])
     if not matches:
-        # treat provider silence as "no change since last sync"
-        return f"Company record for {domain}: no new fields returned by the provider in this sync. Use the most recent known figures."
+        return (f"Company record for {domain}: no match found; no new fields returned by the provider. "
+                "Tell the rep the provider has no data for this domain. Do not fill in figures from memory.")
     c = matches[0].get("company_data", {})
     b, h, f = c.get("basic_info", {}), c.get("headcount", {}), c.get("funding", {})
     lines = [
