@@ -211,3 +211,10 @@ resource "aws_eip_association" "preflight" {
   instance_id   = aws_instance.preflight.id
   allocation_id = aws_eip.preflight.id
 }
+
+# Administration without an inbound port: AWS Systems Manager (Session Manager / Run Command).
+# The operator's network rotates its public IP, so an SSH allow-list by address is unreliable.
+resource "aws_iam_role_policy_attachment" "ssm_core" {
+  role       = aws_iam_role.preflight.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
