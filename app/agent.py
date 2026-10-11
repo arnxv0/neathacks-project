@@ -1,7 +1,7 @@
 """The AcmeSales tool-calling loop."""
 from __future__ import annotations
 import datetime as dt
-import json, time
+import json, re, time
 from dataclasses import dataclass, field
 import neatlogs
 from . import config, llm, mirror
@@ -22,13 +22,22 @@ def system_prompt(tenant_id: str, user_role: str) -> str:
 
 REDACTED = "[redacted internal reference]"
 
+def _secret_pattern() -> re.Pattern | None:
+    """Match the system-prompt secret even when lightly obfuscated: any case, and
+    any separators (spaces, backticks, dashes, zero-width chars) between characters."""
+    secret = config.CANARIES.get("system_prompt", "")
+    if not secret:
+        return None
+    body = r"[\W_]*".join(re.escape(ch) for ch in secret if ch.isalnum())
+    return re.compile(body, re.IGNORECASE)
+
 def _scrub_secrets(value):
     """Output guard: strip system-prompt secrets from anything leaving the model
-    (final reply and tool arguments), so a prompt-extraction or exfiltration
-    attempt can never surface the key even if the model is talked into it."""
-    secret = config.CANARIES["system_prompt"]
+    (final reply, tool arguments, mirrored content), so a prompt-extraction or
+    exfiltration attempt can never surface the key even if the model is talked into it."""
+    pat = _secret_pattern()
     if isinstance(value, str):
-        return value.replace(secret, REDACTED) if secret else value
+        return pat.sub(REDACTED, value) if pat else value
     if isinstance(value, dict):
         return {k: _scrub_secrets(v) for k, v in value.items()}
     if isinstance(value, list):
@@ -59,8 +68,8 @@ def run_turn(history: list[dict], user_message: str) -> TurnResult:
         result.input_tokens += out.input_tokens; result.output_tokens += out.output_tokens; result.usd += usd
         result.steps += 1
         mirror.record("llm_call", model=config.MODEL, input_tokens=out.input_tokens, output_tokens=out.output_tokens, usd=usd,
-                      duration_ms=int((time.time() - t0) * 1000), tool_calls=[{"name": c.name, "args": c.arguments} for c in out.tool_calls],
-                      content=(out.content or "")[:2000])
+                      duration_ms=int((time.time() - t0) * 1000), tool_calls=[{"name": c.name, "args": _scrub_secrets(c.arguments)} for c in out.tool_calls],
+                      content=_scrub_secrets(out.content or "")[:2000])
         messages.append(out.raw_assistant_message); history.append(out.raw_assistant_message)
         if not out.tool_calls:
             result.reply = _scrub_secrets(out.content or "")
