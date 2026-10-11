@@ -197,9 +197,14 @@ resource "aws_instance" "preflight" {
     judge_password_hash = var.judge_password_hash
     fixers_max_parallel = var.fixers_max_parallel
   })
-  user_data_replace_on_change = true
 
   tags = merge(local.tags, { Name = local.name })
+
+  # Editing bootstrap.sh.tftpl must never rebuild a running demo host (it would wipe the ledger and pending
+  # approvals). The bootstrap applies to NEW instances; update a live box with the runbook in deploy/aws/README.md.
+  lifecycle {
+    ignore_changes = [user_data, ami]
+  }
 }
 
 resource "aws_eip_association" "preflight" {
