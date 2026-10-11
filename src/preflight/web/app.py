@@ -50,6 +50,11 @@ def run(aid: str, run_id: str):
 def cluster(aid: str, cluster_id: str):
     return index.cluster_detail(aid, cluster_id)
 
+@app.get("/api/assessments/{aid}/events/history")
+def events_history(aid: str, since: int = 0, limit: int = 2000):
+    """All events so far (the SSE stream only carries new ones)."""
+    return read_events(config.LEDGER_DIR / aid / "events.jsonl", since)[-limit:]
+
 @app.get("/api/assessments/{aid}/events")
 async def events(aid: str, since: int = 0):
     path = config.LEDGER_DIR / aid / "events.jsonl"

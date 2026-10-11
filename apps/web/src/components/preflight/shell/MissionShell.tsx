@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, Boxes, Coins, GitBranch, Layers, Radar, ShieldAlert, Square } from "lucide-react";
+import { Activity, Boxes, Coins, GitBranch, Layers, Radar, ShieldAlert, Square, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,6 +14,7 @@ import { AnimatedList, AnimatedListItem } from "@/components/ui/animated-list";
 
 const NAV = [
   { href: "", label: "Scorecard", icon: Radar },
+  { href: "/pipeline", label: "Pipeline", icon: Workflow },
   { href: "/clusters", label: "Clusters", icon: Layers },
   { href: "/fixes", label: "Fixes", icon: GitBranch },
   { href: "/regressions", label: "Regressions", icon: ShieldAlert },
