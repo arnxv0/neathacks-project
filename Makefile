@@ -68,3 +68,6 @@ regress-demo:     ## reintroduce the D1 weakness in the target with a plausible 
 video:            ## render the explainer with measured numbers from out/report.json
 	python3 scripts/video-props.py
 	cd apps/video && npx remotion render PreflightExplainer out/preflight-explainer.mp4 --browser-executable="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+demo-reset:       ## reset the target to v0-unfixed and clear regressions + ledger before recording
+	./scripts/demo-reset.sh $(TARGET)
