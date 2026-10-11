@@ -53,3 +53,7 @@ Five extra find-only passes of the same 50 seeds: v0 unfixed 22–23/50, fixed m
 ## 2026-10-11 — OpenAI spend cap
 
 Owner's instruction: the OpenAI key is a backup, capped at **$50** for this project (not the $200 on the account). Used so far: ~$1.02 for the two `gpt-4.1-mini` second-target passes. Any further OpenAI use is find-only runs at well under $1 each; no fixers on OpenAI.
+
+## 2026-10-11 — cfo.ai: model built and tidied through the MCP; UI placeholder cells
+
+The whole operating model (10 section tables, 6 model tables, unit economics, board page with KPI comparison and three charts, four scenarios) was created and reorganised through the cfoai MCP from `claude -p` sessions, with every value verified by API readback. After the reorganisation the web UI paints grey placeholder cells for all tables (including plain constants) while charts render and the API serves the values; priming the per-block, per-scenario calculation cache (87 of 88 were empty) did not change the browser rendering, and the page emits no console error and no failing request visible to the extension. Treated as a cfo.ai front-end/cache propagation issue, not a model issue; the earlier populated board screenshot stands as evidence. If it persists on Monday, the fallback is the MCP readback tables in `docs/evidence/cfo-model-build-20261011.md`.

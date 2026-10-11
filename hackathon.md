@@ -39,7 +39,7 @@ Target reset to `v0-unfixed`; `preflight run --mode full` (20 attacks, 50 seeds,
 ### Task list (2026-10-11, while the owner is away)
 - [x] Second fix pass on the residual D1/G3 failures (ledger `20261011-030231-050e`): D1 watchlist 0/2 → 10/10, G3 0/1 → 5/5, approved and merged; regression suite + after-pass re-run.
 - [x] Second target model `gpt-4.1-mini`: v0 31/50 → fixed main 5/50 (fixes transfer across models).
-- [~] cfo.ai: board table rebuilt as a fresh Main-vs-Measured block (values verified through the API; the browser still shows placeholders, investigating the client render); charts render. MCP update clip pending.
+- [~] cfo.ai: workspace tidied (grouped assumptions, board page with executive summary, headline KPI table Main vs Measured, three charts, scenario notes). All 88 block×scenario caches primed; every value verified through the API; charts render in the browser. Open: cfo.ai's web UI shows placeholder cells for all tables (even constants) in this browser profile after the restructure, with no console or HTTP error visible; data is intact. Evidence uses the earlier populated board screenshot + the cash/runway chart. MCP update clip deferred until the UI paints values.
 - [x] **Video narration and script v2** (done 03:25, product demo 2:26, explainer 1:56): lead with impact and answer the judges' likely questions (does it generalise? is it luck? what did it cost? what broke? what would you do next?), one claim per scene backed by an on-screen number; synthesize clause by clause with explicit pauses (250 ms at commas, 500 ms at sentence ends) so the voice stops rushing through commas; re-render both videos.
 - [ ] Refresh README/STATUS numbers after the runs; re-record dashboard clips if the headline numbers move.
 
