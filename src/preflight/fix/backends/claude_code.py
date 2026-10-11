@@ -1,6 +1,6 @@
 """ClaudeCodeFixer: one git worktree per cluster, `claude -p` reads brief.md, commits once (Entire checkpoints the commit)."""
 from __future__ import annotations
-import json, os, pathlib, subprocess, time
+import json, os, pathlib, subprocess, sys, time
 from .base import FixHandle, FixResult
 
 ALLOWED_TOOLS = "Read,Edit,MultiEdit,Write,Glob,Grep,LS,Bash(make test),Bash(make test *),Bash(uv run *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(entire graph *),Bash(entire *),Bash(grep *),Bash(rg *),Bash(ls *),Bash(cat *)"
