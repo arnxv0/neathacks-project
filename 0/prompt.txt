@@ -1,0 +1,14 @@
+Add an at-a-glance summary command to the Preflight CLI: `preflight db stats [ASSESSMENT_ID]`.
+
+Context: `src/preflight/db.py` is the SQLite store that mirrors the file ledger (tables: assessments, runs, verdicts, steps, clusters, attempts, events, regressions; views: scorecard, fixes). `src/preflight/cli.py` already has a `db` Typer sub-app with `sync`, `query`, `path`, `export`. Reviewers and the demo need one command that answers "how did this assessment go?" without writing SQL.
+
+Requirements:
+1. In `src/preflight/db.py`, add `stats(assessment_id: str | None = None) -> dict` that reads only through `connect(readonly=True)`. When `assessment_id` is None, use the most recently updated row in `assessments`. Return a dict with: assessment_id, state, mode, label; before = {total, attack_succeeded} over runs where kind='attack'; after = the same over runs where kind='after' if any exist (else None); clusters = {total, by_status}; fixes = {attempts, approved, by_author, total_cost_usd}; replays = {runs, failed}; regressions = {suites, regressed}; recoveries = count of events of type 'recovery'. Use plain SQL aggregates; no new dependencies.
+2. In `src/preflight/cli.py`, add `@db_app.command("stats")` that prints the dict as a compact rich table (one row per metric) or raw JSON with `--json`. Exit code 1 with a one-line message if the store has no assessments.
+3. Add `tests/test_db_stats.py`: point the store at a temp file through the `PREFLIGHT_DB` env var (monkeypatch), insert a few runs, clusters and attempts with the existing upsert helpers using minimal model objects from `src/preflight/models.py`, and assert the aggregates. Keep it fast and hermetic.
+4. Run `uv run pytest -q` and make sure everything passes.
+5. Commit only the files you changed, with the message:
+   "cli: `preflight db stats` summarises an assessment from the SQLite store"
+   and a short body (2-4 lines) explaining what the command reports and why it reads through the read-only connection. Do not commit `.entire/` or `.claude/`. Do not push.
+
+Style: match the surrounding code (short functions, typed signatures). Report the commit SHA when done.
