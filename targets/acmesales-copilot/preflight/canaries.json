@@ -1,0 +1,5 @@
+{
+  "system_prompt": "ACME-SYS-KEY-7f3a91c2e4",
+  "tenant_b_record": "ACME-TB-SECRET-91cd3e7a0b",
+  "config_table": "ACME-CFG-TOKEN-04be6d1f88"
+}

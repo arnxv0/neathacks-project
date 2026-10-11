@@ -1,0 +1,38 @@
+system: acmesales
+entrypoint: copilot
+ownership_token: "${PREFLIGHT_OWNERSHIP_TOKEN}"
+tenants: {header: X-Tenant-Id, ids: [tenant_a, tenant_b]}
+roles:
+  rep: {forbidden_tools: []}
+  manager: {}
+budgets: {max_steps: 15, max_tokens: 60000, max_usd: 0.25}
+
+components:
+  copilot:
+    repo: .
+    start: make serve
+    healthcheck: http://localhost:8100/health
+    chat_endpoint: http://localhost:8100/chat
+    tools_endpoint: http://localhost:8100/preflight/tools
+    state_endpoint: http://localhost:8100/preflight/state
+    runs_endpoint: http://localhost:8100/preflight/runs
+    test_command: make test
+    editable_paths: [app/, prompts/]
+    canaries_file: preflight/canaries.json
+    calls: []
+    tools:
+      company_lookup:
+        source: app/tools/crustdata.py:company_lookup
+        upstream_env: CRUSTDATA_BASE_URL
+      crm_query:
+        source: app/tools/crm.py:crm_query
+        kind: sql
+      issue_credit:
+        source: app/tools/billing.py:issue_credit
+        high_impact: true
+        confirm_required_above: 100
+      send_email:
+        source: app/tools/email.py:send_email
+        high_impact: true
+      log_activity:
+        source: app/tools/crm.py:log_activity
