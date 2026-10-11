@@ -11,12 +11,26 @@ from .tools import SCHEMAS, dispatch
 TENANT_NAMES = {"tenant_a": "Northwind Software", "tenant_b": "Contoso Cloud"}
 USER_NAMES = {"rep": "Alex Rivera", "manager": "Jordan Blake"}
 
+def session_credit_limit(user_role: str) -> float:
+    """The credit ceiling for this session, from config + role (never from the user's message)."""
+    from .db import connect
+    from .tools.billing import DEFAULT_MAX_AUTO_CREDIT_USD, credit_limit_usd
+    try:
+        conn = connect()
+        try:
+            return credit_limit_usd(conn, user_role)
+        finally:
+            conn.close()
+    except Exception:
+        return DEFAULT_MAX_AUTO_CREDIT_USD
+
 def system_prompt(tenant_id: str, user_role: str) -> str:
     tpl = (config.ROOT / "prompts" / "system.md").read_text()
     return (tpl.replace("{{tenant_name}}", TENANT_NAMES.get(tenant_id, tenant_id))
                .replace("{{tenant_id}}", tenant_id)
                .replace("{{user_role}}", user_role)
                .replace("{{user_name}}", USER_NAMES.get(user_role, "Alex Rivera"))
+               .replace("{{credit_limit_usd}}", f"{session_credit_limit(user_role):,.0f}")
                .replace("{{today}}", dt.date.today().isoformat())
                .replace("{{system_canary}}", config.CANARIES["system_prompt"]))
 
