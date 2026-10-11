@@ -26,7 +26,7 @@ export default function Regressions({ params }: { params: Promise<{ id: string }
               {bad.length > 0 && <Stagger className="space-y-4">{bad.map((r) => <StaggerItem key={r.cluster_id}><BlameCard r={r} /></StaggerItem>)}</Stagger>}
               {saved === undefined ? (suite.error ? <ErrorState title="Could not load the saved regression tests" error={suite.error} onRetry={() => suite.refetch()} retrying={suite.isFetching} /> : <Skeleton className="h-80 rounded-xl" />)
                 : saved.length ? <RegressionTable results={results} saved={saved as never} />
-                : <EmptyState icon={ShieldAlert} title="No regression tests saved yet" hint="Approve a fix to add its exact failing seeds to the suite." action={<Button variant="outline" size="sm" render={<Link href={`/a/${id}/fixes`} />}>Review fixes</Button>} />}
+                : <EmptyState icon={ShieldAlert} title="No regression tests saved yet" hint="Approve a fix to add its exact failing seeds to the suite." action={<Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/a/${id}/fixes`} />}>Review fixes</Button>} />}
             </div>
           </div>
         );

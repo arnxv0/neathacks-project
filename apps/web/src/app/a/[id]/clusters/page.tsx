@@ -14,7 +14,7 @@ function ClustersInner({ params }: { params: Promise<{ id: string }> }) {
   const sp = useSearchParams();
   const attack = sp.get("attack");
   const query = useSummary(id);
-  const clear = <Button variant="outline" size="sm" render={<Link href={`/a/${id}/clusters`} />}><X />Show all clusters</Button>;
+  const clear = <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/a/${id}/clusters`} />}><X />Show all clusters</Button>;
   return (
     <DataView query={query} what="the clusters" skeleton={<CardGridSkeleton />}>
       {(data) => {
@@ -23,7 +23,7 @@ function ClustersInner({ params }: { params: Promise<{ id: string }> }) {
           <div>
             <PageHeader title={attack ? `Clusters for ${attack}` : "Failure clusters"} subtitle="deterministic signature: family × failing graders × tool sequence up to the first violation" right={attack ? clear : undefined} />
             {list.length ? <ClusterGrid clusters={list} id={id} />
-              : <EmptyState icon={Layers} title="No clusters" hint={attack ? `${attack} did not produce failures in this assessment.` : "Clusters appear once failed runs have been graded and grouped by root cause."} action={attack ? clear : <Button variant="outline" size="sm" render={<Link href={`/a/${id}/pipeline`} />}>Open the pipeline</Button>} />}
+              : <EmptyState icon={Layers} title="No clusters" hint={attack ? `${attack} did not produce failures in this assessment.` : "Clusters appear once failed runs have been graded and grouped by root cause."} action={attack ? clear : <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/a/${id}/pipeline`} />}>Open the pipeline</Button>} />}
           </div>
         );
       }}

@@ -143,8 +143,13 @@ for (const [w, h] of WIDTHS) {
     await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
     await page.waitForSelector("main h1, main h2", { timeout: 20000 }).catch(() => {});
     await page.waitForTimeout(Number(process.env.SETTLE ?? 2500));
-    await page.screenshot({ path: join(OUT, `${name}-${w}.png`), fullPage: true });
     const issues = await page.evaluate(audit);
+    // Sticky chrome (sidebar, event ticker) would be painted mid-page in a stitched full-page shot, so grow the viewport to the page instead.
+    const full = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewportSize({ width: w, height: Math.max(h, full) });
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: join(OUT, `${name}-${w}.png`), fullPage: true });
+    await page.setViewportSize({ width: w, height: h });
     for (const e of errors.splice(0)) issues.push({ kind: "page-error", el: "window", detail: e });
     report[`${name}@${w}`] = issues;
     total += issues.length;

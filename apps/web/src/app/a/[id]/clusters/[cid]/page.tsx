@@ -18,7 +18,7 @@ export default function ClusterPage({ params }: { params: Promise<{ id: string; 
         <div>
           <PageHeader title={c.attack?.name ?? cid} subtitle={c.attack?.description}
             crumbs={[{ label: "Scorecard", href: `/a/${id}` }, { label: "Clusters", href: `/a/${id}/clusters` }, { label: cid }]}
-            right={<Button size="sm" render={<Link href={`/a/${id}/fixes/${cid}`} />}>Open fix<ArrowRight /></Button>}
+            right={<Button size="sm" nativeButton={false} render={<Link href={`/a/${id}/fixes/${cid}`} />}>Open fix<ArrowRight /></Button>}
             meta={<><StatusBadge status={c.status} />{c.attack_ids.map((a) => <Tone key={a} tone="fail">{a}</Tone>)}{c.owasp && <Tone tone="muted">{c.owasp}</Tone>}<Truncate text={cid} className="mono text-xs text-muted-foreground" /></>} />
           <div className="space-y-6">
             <HypothesisCard c={c} />

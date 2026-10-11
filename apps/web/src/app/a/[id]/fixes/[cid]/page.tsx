@@ -31,7 +31,7 @@ export default function FixPage({ params }: { params: Promise<{ id: string; cid:
           <div>
             <PageHeader title={c.attack?.name ?? cid} subtitle={c.hypothesis}
               crumbs={[{ label: "Scorecard", href: `/a/${id}` }, { label: "Fixes", href: `/a/${id}/fixes` }, { label: cid }]}
-              right={<Button variant="outline" size="sm" render={<Link href={`/a/${id}/clusters/${cid}`} />}><ArrowLeft />Divergence</Button>}
+              right={<Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/a/${id}/clusters/${cid}`} />}><ArrowLeft />Divergence</Button>}
               meta={<><StatusBadge status={c.status} />{c.attack_ids.map((x) => <Tone key={x} tone="fail">{x}</Tone>)}<Truncate text={cid} className="mono text-xs text-muted-foreground" /></>} />
             <div className="space-y-6">
               <Card className={cn(PANEL, "relative overflow-hidden")}>

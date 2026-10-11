@@ -43,7 +43,7 @@ export function BlameCard({ r }: { r: RegressionResult }) {
     <Card className={cn(PANEL, "border-fail/40 bg-fail/5")}>
       <CardContent className="space-y-3 p-4 sm:p-5">
         <div className="flex min-w-0 items-center gap-2"><Tone tone="fail">regression</Tone><Truncate text={r.cluster_id} className="mono text-xs text-foreground" /></div>
-        {top ? <p className="text-sm leading-relaxed break-words">Brought back by <span className="mono text-checkpoint">{top.sha}</span> <span className="text-muted-foreground">“{top.subject}”</span> by {top.author} on <span className="whitespace-nowrap tabular-nums">{top.date}</span>, which touched {b.files.map((f) => <code key={f} className="mono mx-1 rounded bg-muted px-1.5 py-0.5 text-xs break-all">{f}</code>)}</p>
+        {top ? <p className="text-sm leading-relaxed break-words">Brought back by <span className="mono text-checkpoint">{top.sha}</span> <span className="text-muted-foreground">“{top.subject}”</span> by {top.author} on <span className="whitespace-nowrap tabular-nums">{top.date}</span>, which touched {b.files.map((f) => <code key={f} className="mono mx-1 inline-block max-w-full rounded bg-muted px-1.5 py-0.5 align-middle text-xs break-all">{f}</code>)}</p>
              : <p className="text-sm text-muted-foreground">No commit after the fix touched the suspected files; the regression is elsewhere.</p>}
         {b.entire && <Disclosure title="what Entire recorded for that commit"><Markdown text={b.entire} /></Disclosure>}
       </CardContent>

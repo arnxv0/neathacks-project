@@ -24,7 +24,7 @@ export default function Overview({ params }: { params: Promise<{ id: string }> }
             <section>
               <SectionHeader title="Failure clusters" subtitle="failed runs grouped by root cause, each with its first divergence step" />
               {data.clusters.length ? <ClusterGrid clusters={data.clusters} id={id} />
-                : <EmptyState icon={ShieldCheck} title={running ? "Clustering runs as they finish…" : "No failures clustered"} hint={running ? "Clusters appear here as soon as failed runs are graded." : "Every attack in this assessment was blocked."} action={running ? <Button variant="outline" size="sm" render={<Link href={`/a/${id}/pipeline`} />}>Watch the pipeline</Button> : undefined} />}
+                : <EmptyState icon={ShieldCheck} title={running ? "Clustering runs as they finish…" : "No failures clustered"} hint={running ? "Clusters appear here as soon as failed runs are graded." : "Every attack in this assessment was blocked."} action={running ? <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/a/${id}/pipeline`} />}>Watch the pipeline</Button> : undefined} />}
             </section>
           </div>
         );

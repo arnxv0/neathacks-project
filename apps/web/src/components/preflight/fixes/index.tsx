@@ -75,7 +75,7 @@ export function ReplayDots({ replay, compact = false, live }: { replay: FixAttem
 export function DiffViewer({ diff }: { diff: string }) {
   if (!diff) return <p className="text-xs text-muted-foreground">No diff yet.</p>;
   return (
-    <div tabIndex={0} role="region" aria-label="Diff" className="scroll-thin max-h-[70vh] overflow-auto rounded-lg border border-border/60 bg-black/30">
+    <div tabIndex={0} role="region" aria-label="Diff" className="scroll-thin max-h-[min(70vh,640px)] overflow-auto rounded-lg border border-border/60 bg-black/30">
       <pre className="mono w-max min-w-full text-[11.5px] leading-5 p-3">
         {diff.split("\n").map((l, i) => (
           <div key={i} className={cn("px-1 -mx-1", l.startsWith("+") && !l.startsWith("+++") ? "diff-add" : l.startsWith("-") && !l.startsWith("---") ? "diff-del" : l.startsWith("@@") ? "diff-hunk" : l.startsWith("diff ") ? "text-foreground font-semibold mt-3" : "text-muted-foreground")}>{l || " "}</div>
