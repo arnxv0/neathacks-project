@@ -49,3 +49,7 @@ Enabling Entire on the Preflight repo made its Claude Code hooks snapshot the *i
 ## 2026-10-11 — Variance passes instead of one headline number
 
 Five extra find-only passes of the same 50 seeds: v0 unfixed 22–23/50, fixed main 4–5/50 (the fix run's own after-pass had 0/50). The residue is stable (D1 ×2, G3 ×2, occasionally B4) and explains itself: the D1 and G3 clusters were recorded as closed-by-main after merge conflicts, i.e. closed by other fixes' prompt edits, not by their own code changes, so the protection is probabilistic. Response: report the range, not the best run, and run a second fix pass on D1/G3/B4 against the fixed main. Reporting wart found on the way: `target_commit` comes from the main checkout's HEAD, so runs served from a detached worktree are mislabelled; the assessment label carries the truth until `target_version` reads the served instance's `/health` version instead.
+
+## 2026-10-11 — OpenAI spend cap
+
+Owner's instruction: the OpenAI key is a backup, capped at **$50** for this project (not the $200 on the account). Used so far: ~$1.02 for the two `gpt-4.1-mini` second-target passes. Any further OpenAI use is find-only runs at well under $1 each; no fixers on OpenAI.
