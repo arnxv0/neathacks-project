@@ -72,6 +72,8 @@ Evidence in `docs/evidence/`: scorecard screenshots (3/3→0/3 and 8/20→2/20),
 - **Claude** — target model `claude-haiku` via the hackathon LiteLLM gateway (Bedrock is one env switch away, blocked on the Anthropic use-case form); Preflight's attacker/judge/analyst on the same gateway; fixers are Claude Code (`claude -p`).
 - **Orchestrator.inc** — `OrchestratorFixer` backend exists (`ao spawn --standalone …`), selected automatically when `ao status --json` is healthy; not exercised (daemon not installed).
 
+- **cfo.ai** — the operating model exists in the workspace "Preflight" (built 2026-10-11 via the `cfoai` MCP from a Claude Code session, not by hand): assumptions from `cfo/assumptions.csv` as Variables, funnel → revenue → COGS → headcount → opex → cash/runway, unit economics, a Board summary page comparing Main vs **Measured**, and Downside/Upside scenarios. The Measured scenario carries the real COGS from `cost_report-full-20261011.csv`; effect: gross margin 76.1% → 81.0% at month 12, Pro LTV:CAC 12.3 → 13.1. Report with limitations: `docs/evidence/cfo-model-build-20261011.md`.
+
 ## 5. Open items
 
 Blocked on the owner:
