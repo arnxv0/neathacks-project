@@ -13,7 +13,16 @@ def init_tracing() -> None:
     import neatlogs
     neatlogs.init(api_key=os.getenv("NEATLOGS_API_KEY"), workflow_name=config.CFG.neatlogs.get("preflight_workflow", "preflight"),
                   tags=["preflight"])
+    import atexit
+    atexit.register(_flush_quietly)   # the CLI exits right after the last LLM call; without this the exporter drops the tail
     _inited = True
+
+def _flush_quietly() -> None:
+    try:
+        import neatlogs
+        neatlogs.flush()
+    except Exception:
+        pass
 
 @dataclass
 class Completion:
