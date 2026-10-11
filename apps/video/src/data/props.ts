@@ -10,10 +10,10 @@ export const defaultProps: ExplainerProps = {
   "total": 50,
   "clusters": 15,
   "fixes": 15,
-  "replayBefore": "0/1",
-  "replayAfter": "5/5",
+  "replayBefore": "0/4",
+  "replayAfter": "20/20",
   "costPerRun": 0.00603,
   "costPerAssessment": 37.0581,
   "repoUrl": "github.com/arnxv0/neathacks-project",
-  "regressionCommit": "a1b2c3d"
+  "regressionCommit": "1bbce14"
 };

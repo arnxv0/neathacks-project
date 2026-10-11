@@ -6,15 +6,16 @@ rep = json.load(open(sys.argv[1] if len(sys.argv) > 1 else root / "out" / "repor
 sc, after = rep["scorecard"], rep.get("after") or {"succeeded": 0, "total": rep["scorecard"]["total"]}
 fixes = [f for f in rep.get("fixes", []) if f.get("status") == "approved"]
 rb = ra = None
-for f in fixes:
-    if f.get("replay"):
-        rb, ra = f["replay"]["before"], f["replay"]["after"]; break
+# the hero replay: the approved fix with the most replay runs (e.g. 0/4 -> 20/20)
+best = max((f for f in fixes if f.get("replay")), key=lambda f: int(str(f["replay"]["after"]).split("/")[-1] or 0), default=None)
+if best:
+    rb, ra = best["replay"]["before"], best["replay"]["after"]
 cr = rep.get("cost_report", {})
 props = {
     "before": sc["succeeded"], "after": after["succeeded"], "total": sc["total"], "clusters": len(rep.get("clusters", [])), "fixes": len(fixes),
     "replayBefore": rb or "0/3", "replayAfter": ra or "6/6", "costPerRun": float(cr.get("cost_per_attack_run", 0.012)),
     "costPerAssessment": float(cr.get("cost_per_full_assessment", 2.94)), "repoUrl": "github.com/arnxv0/neathacks-project",
-    "regressionCommit": (rep.get("regressions") or [{}])[0].get("blame", {}).get("commits", [{}])[0].get("sha", "a1b2c3d") if rep.get("regressions") else "a1b2c3d",
+    "regressionCommit": __import__("os").getenv("REGRESS_COMMIT") or next((c.get("sha", "")[:7] for r in (rep.get("regressions") or []) for c in ((r.get("blame") or {}).get("commits") or []) if c.get("sha")), "a1b2c3d"),
 }
 ts = root / "apps" / "video" / "src" / "data" / "props.ts"
 s = ts.read_text()
