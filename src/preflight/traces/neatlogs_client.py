@@ -13,11 +13,14 @@ def _headers() -> dict:
     return {"Authorization": f"Bearer {os.getenv('NEATLOGS_TOKEN')}", "x-project-id": os.getenv("NEATLOGS_PROJECT_ID", "")}
 
 def trace_url(trace_id: str | None, session_id: str | None = None) -> str | None:
-    pid = os.getenv("NEATLOGS_PROJECT_ID", "")
+    # The app's own trace URLs carry orgId + projectId (verified 2026-10-11).
+    q = f"projectId={os.getenv('NEATLOGS_PROJECT_ID', '')}"
+    if os.getenv("NEATLOGS_ORG_ID"):
+        q += f"&orgId={os.getenv('NEATLOGS_ORG_ID')}"
     if trace_id:
-        return f"{APP}/traces/{trace_id}?project={pid}"
+        return f"{APP}/traces/{trace_id}?{q}"
     if session_id:
-        return f"{APP}/sessions/{session_id}?project={pid}"
+        return f"{APP}/sessions/{session_id}?{q}"
     return None
 
 def find_trace(session_id: str, workflow: str | None = None, retries: int = 3, delay: float = 2.0) -> dict | None:
