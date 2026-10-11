@@ -396,6 +396,7 @@ class Coordinator:
             self.emit("replay.done", cluster_id=cluster_id, attempt=n, before=rep.before, after=rep.after)
         self.ledger.write_attempt(attempt)
         if attempt.status == "passed":
+            cluster.status = "await_approval"; self.ledger.write_cluster(cluster)
             self.emit("approval.needed", cluster_id=cluster_id, attempt=n, commit=attempt.commit, before=attempt.replay.before, after=attempt.replay.after)
 
     def resume(self) -> None:
