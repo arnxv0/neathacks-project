@@ -1,7 +1,7 @@
 """The AcmeSales tool-calling loop."""
 from __future__ import annotations
 import datetime as dt
-import json, time
+import json, re, time
 from dataclasses import dataclass, field
 import neatlogs
 from . import config, llm, mirror
@@ -21,6 +21,30 @@ def system_prompt(tenant_id: str, user_role: str) -> str:
                .replace("{{today}}", dt.date.today().isoformat())
                .replace("{{max_auto_credit_usd}}", f"{max_auto_credit_usd():,.0f}")
                .replace("{{system_canary}}", config.CANARIES["system_prompt"]))
+
+REDACTED = "[redacted internal reference]"
+
+def _secret_pattern() -> re.Pattern | None:
+    """Match the system-prompt secret even when lightly obfuscated: any case, and
+    any separators (spaces, backticks, dashes, zero-width chars) between characters."""
+    secret = config.CANARIES.get("system_prompt", "")
+    if not secret:
+        return None
+    body = r"[\W_]*".join(re.escape(ch) for ch in secret if ch.isalnum())
+    return re.compile(body, re.IGNORECASE)
+
+def _scrub_secrets(value):
+    """Output guard: strip system-prompt secrets from anything leaving the model
+    (final reply, tool arguments, mirrored content), so a prompt-extraction or
+    exfiltration attempt can never surface the key even if the model is talked into it."""
+    pat = _secret_pattern()
+    if isinstance(value, str):
+        return pat.sub(REDACTED, value) if pat else value
+    if isinstance(value, dict):
+        return {k: _scrub_secrets(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_scrub_secrets(v) for v in value]
+    return value
 
 @dataclass
 class TurnResult:
@@ -46,29 +70,30 @@ def run_turn(history: list[dict], user_message: str) -> TurnResult:
         result.input_tokens += out.input_tokens; result.output_tokens += out.output_tokens; result.usd += usd
         result.steps += 1
         mirror.record("llm_call", model=config.MODEL, input_tokens=out.input_tokens, output_tokens=out.output_tokens, usd=usd,
-                      duration_ms=int((time.time() - t0) * 1000), tool_calls=[{"name": c.name, "args": c.arguments} for c in out.tool_calls],
-                      content=(out.content or "")[:2000])
+                      duration_ms=int((time.time() - t0) * 1000), tool_calls=[{"name": c.name, "args": _scrub_secrets(c.arguments)} for c in out.tool_calls],
+                      content=_scrub_secrets(out.content or "")[:2000])
         messages.append(out.raw_assistant_message); history.append(out.raw_assistant_message)
         if not out.tool_calls:
-            result.reply = out.content or ""
+            result.reply = _scrub_secrets(out.content or "")
             break
         for call in out.tool_calls:
             t1 = time.time()
+            args = _scrub_secrets(call.arguments)  # never let the key reach an email, note or query
             try:
-                tool_out = dispatch(call.name, call.arguments)
+                tool_out = dispatch(call.name, args)
             except TypeError as e:
                 tool_out = f"error: bad arguments for {call.name}: {e}"
             except Exception as e:  # keep the loop alive; the model sees the error
                 tool_out = f"error: {type(e).__name__}: {e}"
             result.steps += 1
-            result.tool_calls.append({"name": call.name, "args": call.arguments, "result": tool_out[:4000]})
-            mirror.record("tool_call", tool=call.name, args=call.arguments, result=tool_out[:4000],
+            result.tool_calls.append({"name": call.name, "args": args, "result": tool_out[:4000]})
+            mirror.record("tool_call", tool=call.name, args=args, result=tool_out[:4000],
                           duration_ms=int((time.time() - t1) * 1000))
             tool_msg = {"role": "tool", "tool_call_id": call.id, "content": tool_out}
             messages.append(tool_msg); history.append(tool_msg)
     else:
         result.reply = "I hit my internal step limit while working on this. Here is where I got to: " + \
-                       (out.content or "see the actions above.")
+                       _scrub_secrets(out.content or "see the actions above.")
     mirror.record("reply", content=result.reply[:4000], steps=result.steps, usd=result.usd,
                   input_tokens=result.input_tokens, output_tokens=result.output_tokens)
     return result
