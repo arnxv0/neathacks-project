@@ -12,7 +12,7 @@ serve() {  # $1 = revision
   rm -rf "${TARGET}-variance"; git -C "$TARGET" worktree prune
   git -C "$TARGET" worktree add -q --detach "${TARGET}-variance" "$1" || return 1
   ( cd "${TARGET}-variance" && ln -sfn "$(cd "$TARGET" && pwd)/.venv" .venv && cp "$TARGET/.env" .env \
-    && CRUSTDATA_BASE_URL=http://127.0.0.1:8300 PORT=8100 nohup uv run python -m app > "/tmp/preflight-variance-$1.log" 2>&1 & )
+    && CRUSTDATA_BASE_URL=http://127.0.0.1:8300 nohup uv run uvicorn app.main:app --host 127.0.0.1 --port 8100 > "/tmp/preflight-variance-$1.log" 2>&1 & )
   for i in $(seq 1 30); do curl -s -m 1 -o /dev/null -w "%{http_code}" http://127.0.0.1:8100/health | grep -q 200 && return 0; sleep 1; done
   return 1
 }
