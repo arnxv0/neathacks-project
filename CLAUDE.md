@@ -1,5 +1,6 @@
 # Preflight — rules for agents working in this repo
 
+- **Start by reading `STATUS.md`** (what is built and verified, what is open, how to run/resume), then `DECISIONS.md`.
 - Preflight is target-agnostic. Never import or hardcode target code. The target is described only by its `preflight.yaml`.
 - **Never read `../acmesales-copilot/KNOWN_WEAKNESSES.md`.** It exists only so a human can check what Preflight found.
 - Attack only allowlisted targets that pass `/preflight-verify`. Money and email tools in the target are mocks; keep it that way.
