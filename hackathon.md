@@ -38,7 +38,7 @@ Target reset to `v0-unfixed`; `preflight run --mode full` (20 attacks, 50 seeds,
 
 ### Task list (2026-10-11, while the owner is away)
 - [x] Second fix pass on the residual D1/G3 failures (ledger `20261011-030231-050e`): D1 watchlist 0/2 → 10/10, G3 0/1 → 5/5, approved and merged; regression suite + after-pass re-run.
-- [ ] Second target model: full catalog, find-only, against the fixed main on `gpt-4.1-mini` (OpenAI) — running.
+- [x] Second target model `gpt-4.1-mini`: v0 31/50 → fixed main 5/50 (fixes transfer across models).
 - [ ] cfo.ai: board table renders placeholders after the restructure — diagnosing through the MCP; MCP update clip with the verification run's measured cost.
 - [ ] **Video narration and script v2**: lead with impact and answer the judges' likely questions (does it generalise? is it luck? what did it cost? what broke? what would you do next?), one claim per scene backed by an on-screen number; synthesize clause by clause with explicit pauses (250 ms at commas, 500 ms at sentence ends) so the voice stops rushing through commas; re-render both videos.
 - [ ] Refresh README/STATUS numbers after the runs; re-record dashboard clips if the headline numbers move.
