@@ -2,7 +2,7 @@
 
 **Preflight crash-tests an AI agent before it launches.** It attacks the agent with hostile users, broken tools and injected data, finds the first step where a good run and a bad run diverge, dispatches a Claude Code fixer per root cause, records every fix as an Entire checkpoint, waits for a human to approve, replays the exact failing runs to prove the fix holds (1/5 → 5/5), and keeps them as permanent regression tests.
 
-Built for neatHack 2026. Demo target: [AcmeSales Copilot](https://github.com/arnxv0/acmesales-copilot), a B2B sales agent on Claude (LiteLLM or AWS Bedrock) with Crustdata company data.
+Built for neatHack 2026. Demo target: [AcmeSales Copilot](targets/acmesales-copilot/) (vendored in this repo with its full fix history), a B2B sales agent on Claude (LiteLLM or AWS Bedrock) with Crustdata company data.
 
 ```
 attack ──► trace (neatlogs) ──► grade ──► cluster ──► divergence ──► fix (Claude Code + Entire) ──► approve ──► replay K× ──► regression suite
@@ -23,6 +23,7 @@ attack ──► trace (neatlogs) ──► grade ──► cluster ──► di
 
 ```bash
 cp .env.example .env            # LiteLLM, neatlogs, Crustdata keys
+make target-checkout            # targets/acmesales-copilot -> ../acmesales-copilot as its own git repo (fixers commit there; Entire hooks in)
 uv sync && (cd ../acmesales-copilot && uv sync)
 make dev-host                   # target :8100, chaos proxy :8300, API :8200, dashboard :3000 (tmux)
 uv run preflight run ../acmesales-copilot --mode dev --attacks D1 --seeds 3
@@ -42,7 +43,7 @@ Docker: `make up` runs the four services in Compose (fixers and Entire run on th
 
 ## Recreate it
 
-`SETUP.md` has the from-scratch steps: prerequisites, keys, both repos, services, assessments, the demo beats.
+`SETUP.md` has the from-scratch steps: prerequisites, keys, target checkout, services, assessments, the demo beats.
 
 ## Status
 

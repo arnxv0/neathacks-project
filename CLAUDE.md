@@ -2,7 +2,8 @@
 
 - **Start by reading `STATUS.md`** (what is built and verified, what is open, how to run/resume), then `DECISIONS.md`.
 - Preflight is target-agnostic. Never import or hardcode target code. The target is described only by its `preflight.yaml`.
-- **Never read `../acmesales-copilot/KNOWN_WEAKNESSES.md`.** It exists only so a human can check what Preflight found.
+- **Never read `KNOWN_WEAKNESSES.md`** in the target, at either `../acmesales-copilot/` or the vendored copy `targets/acmesales-copilot/`. It exists only so a human can check what Preflight found.
+- The target's source of truth for GitHub is `targets/acmesales-copilot/` (git subtree). The live checkout fixers commit into is the sibling `../acmesales-copilot` (`make target-checkout` creates it, `make target-sync` pulls its commits back). Edit the target only through Preflight fixers, never by hand in `targets/`.
 - Attack only allowlisted targets that pass `/preflight-verify`. Money and email tools in the target are mocks; keep it that way.
 - Caps are enforced in code (`config.yaml`): per-run and per-assessment $ caps, RPS, wall clock, `STOP` file kill switch. Never raise them to make a demo work; scale seeds down instead and note it in `DECISIONS.md`.
 - LLM steps get pointers into the ledger, never pasted traces.

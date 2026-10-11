@@ -15,7 +15,8 @@ Preflight crash-tests an AI agent before launch. It attacks the agent with hosti
 | Path | What |
 |---|---|
 | `neathacks-project/` (this repo) | Preflight: Python package `src/preflight`, attack catalog `attacks/`, fixtures, regression tests `regressions/`, dashboard `apps/web`, explainer video `apps/video`, scripts, docs, evidence |
-| `../acmesales-copilot/` (sibling, own git repo, Entire enabled) | The demo target "AcmeSales Copilot": a B2B sales agent (Claude via LiteLLM or Bedrock, Crustdata company lookup, SQLite CRM, mock credits/email). Tag `v0-unfixed` = the seeded-weakness state. After v0 only Preflight's fixers and merges touch it (plus two human test-isolation commits and the entire-graph instructions) |
+| `targets/acmesales-copilot/` | The demo target, vendored with `git subtree` (full history, synced with `make target-sync`). This is what is on GitHub. |
+| `../acmesales-copilot/` (sibling, own git repo, Entire enabled; `make target-checkout` creates it from the subtree) | The live checkout of the demo target "AcmeSales Copilot": a B2B sales agent (Claude via LiteLLM or Bedrock, Crustdata company lookup, SQLite CRM, mock credits/email). Tag `v0-unfixed` = the seeded-weakness state. After v0 only Preflight's fixers and merges touch it (plus two human test-isolation commits and the entire-graph instructions) |
 | `../acmesales-copilot-worktrees/` | One git worktree per active fix branch (`fix/<cluster_id>`), created by the fixer backend, removed on approve |
 
 ### Preflight package (`src/preflight/`)
@@ -72,8 +73,8 @@ Evidence in `docs/evidence/`: scorecard screenshots (3/3→0/3 and 8/20→2/20),
 ## 5. Open items
 
 Blocked on the owner:
-1. Network filter blocking neatlogs ingest (hotspot or disable the filter), then rerun an assessment to get real before/after traces and set `NEATLOGS_TOKEN` (service-account token) in `.env` for read-back.
-2. Make `arnxv0/neathacks-project` public; create a public `acmesales-copilot` repo and push it.
+1. ~~Network filter blocking neatlogs ingest~~ Cleared 2026-10-11: `ingest.neatlogs.com` serves its real Amazon cert again and the read API returns the 6 regression traces from the Oct 10 evening run. `NEATLOGS_TOKEN` is set in `.env`. Next: clean full-mode run with real before/after traces.
+2. Make `arnxv0/neathacks-project` public (the target is vendored under `targets/`, no second repo).
 3. cfo.ai: sign up, build the model with Ari, `claude mcp add --transport http cfoai https://api.cfo.ai/mcp`, authenticate, push `out/cost_report.csv` into a Measured scenario.
 4. Optional: Bedrock use-case form; Orchestrator desktop app for the `ao` backend.
 5. #neatHack posts; demo video recording (script in `DEMO.md`).

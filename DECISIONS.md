@@ -14,3 +14,11 @@
 - 2026-10-10 Remotion renders with the installed Chrome (`--browser-executable`) because downloading Remotion's headless browser is blocked by the same network filter that blocks neatlogs ingest.
 - 2026-10-10 Entire's `stop` hook for Claude Code blocks ~10 min at the end of every `claude -p` fixer session (the session transcript is already written by then). The fixer backend now kills a stop hook older than 90 s so fixers return in minutes instead of tens of minutes.
 - 2026-10-10 Bug found by running three fixers in parallel: every replay booted the fixed target on port 8101, so the second replay's server disappeared when the first finished ("Server disconnected"). Each replay now takes a free port.
+
+## 2026-10-11 — Target vendored into this repo (git subtree), no second GitHub repo
+
+Owner decision: one public repo. The AcmeSales Copilot target now lives at `targets/acmesales-copilot/` via `git subtree add` (full history, 15 commits incl. every fixer commit and approved merge; `git subtree split` reproduces the original SHAs, so `v0-unfixed` = d2ffde1 still holds). The runtime shape is unchanged: fixers, Entire hooks, worktrees and merges work on the sibling checkout `../acmesales-copilot`, because Entire checkpoints and `git worktree` must be scoped to the target's own repo, not Preflight's. `make target-checkout` materialises the sibling from the subtree; `make target-sync` pulls fixer commits back. `KNOWN_WEAKNESSES.md` is now also present at `targets/acmesales-copilot/`; the never-read rule in `CLAUDE.md` covers both paths.
+
+## 2026-10-11 — neatlogs ingest reachable again
+
+The safebrowse.io interception of `ingest.neatlogs.com` is gone (real Amazon RSA cert, HTTP 401 on bare GET as expected). The read API with the new service-account token returns 6 `acmesales-copilot` traces from the 2026-10-10 17:23 PT regression run, so some spans were already exported. The Preflight-side workflow has 0 traces; check `neatlogs.init` in Preflight's own process on the next run.

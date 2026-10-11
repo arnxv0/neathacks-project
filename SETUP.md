@@ -22,14 +22,17 @@ Accounts and keys (put in `.env`, never commit):
 - `PREFLIGHT_OWNERSHIP_TOKEN`: any random string; the target must echo the same one from `/preflight-verify` or Preflight refuses to attack it.
 - Optional: AWS credentials with Bedrock access (and the Anthropic use-case form submitted) to run the target with `TARGET_PROVIDER=bedrock`.
 
-## 1. Clone both repos side by side
+## 1. Clone, then materialise the target as a sibling repo
+
+One repo holds everything. The demo target lives in `targets/acmesales-copilot/` as a git subtree with its full commit history (seeded v0, every fixer commit, every approved merge). Preflight's fixers need the target as its **own** git repo (worktrees per fix, Entire hooks, merges), so check it out next to this repo:
 
 ```bash
 mkdir -p ~/Repos && cd ~/Repos
 git clone https://github.com/arnxv0/neathacks-project.git
-git clone <acmesales-copilot repo> acmesales-copilot        # must be the sibling directory ../acmesales-copilot
+cd neathacks-project
+make target-checkout          # splits the subtree -> ../acmesales-copilot (own git, same SHAs, tag v0-unfixed)
 ```
-If you only have this repo, the target is small: it is the `acmesales-copilot` tree described in `STATUS.md` §2; rebuild it from `ARCHITECTURE.md` §3 (contract) and `SPEC.md` §5 (seeded weaknesses), or ask for the repo.
+After a run, `make target-sync` pulls the fixer commits and merges from `../acmesales-copilot` back into `targets/acmesales-copilot/` so the public history shows them.
 
 ## 2. Install
 

@@ -5,7 +5,19 @@ MODE ?= dev
 PROXY_PORT ?= 8300
 export PATH := $(HOME)/.local/bin:$(PATH)
 
-.PHONY: setup up down logs dev-host target-host proxy-host api-host web-host run run-full demo test regress stop clean-ledger
+.PHONY: target-checkout target-sync setup up down logs dev-host target-host proxy-host api-host web-host run run-full demo test regress stop clean-ledger
+
+target-checkout:  ## materialise the vendored target (targets/acmesales-copilot) as its own git repo at $(TARGET), same SHAs + v0-unfixed tag
+	@test ! -e $(TARGET) || { echo "$(TARGET) already exists"; exit 1; }
+	git subtree split --prefix=targets/acmesales-copilot -b _target-split
+	git clone -q -b _target-split . $(TARGET)
+	git branch -D _target-split
+	cd $(TARGET) && git checkout -q -b main && git branch -D _target-split && git remote remove origin && \
+	  (git tag v0-unfixed d2ffde1 2>/dev/null || git tag v0-unfixed $$(git rev-list --max-parents=0 HEAD))
+	@echo "target at $(TARGET). Next: cd $(TARGET) && cp .env.example .env && uv sync && entire enable --yes --agent claude-code"
+
+target-sync:      ## pull the live target repo's commits (fixes, merges) back into targets/acmesales-copilot
+	git subtree pull --prefix=targets/acmesales-copilot $(TARGET) main -m "target: sync fixes and merges from the live AcmeSales Copilot checkout"
 
 setup:            ## install python deps for both repos + web deps
 	uv sync
