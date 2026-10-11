@@ -64,10 +64,17 @@ const secs = (c: Clip) => Math.max(c.seconds, VO[c.vo] + 0.8);
 export const TITLE_FRAMES = Math.ceil((VO["pd-title"] + 1.2) * FPS), OUTRO_FRAMES = Math.ceil((VO["pd-outro"] + 1.5) * FPS);
 export const DEMO_TOTAL = TITLE_FRAMES + OUTRO_FRAMES + CLIPS.reduce((n, c) => n + Math.ceil(secs(c) * FPS), 0);
 
+
+const MUSIC_VOL = 0.03;
+const Music: React.FC<{ total: number }> = ({ total }) => (
+  <Audio src={staticFile("music-ambient.mp3")} loop volume={(f) => MUSIC_VOL * Math.min(1, f / 45) * Math.min(1, Math.max(0, (total - f) / 60))} />
+);
+
 export const ProductDemo: React.FC<ExplainerProps> = (p) => {
   let at = TITLE_FRAMES;
   return (
     <AbsoluteFill style={{ background: "var(--bg)" }}>
+      <Music total={DEMO_TOTAL} />
       <Sequence from={0} durationInFrames={TITLE_FRAMES} name="title"><Fade frames={TITLE_FRAMES}><Title p={p} /></Fade><Audio src={staticFile("vo/pd-title.mp3")} /></Sequence>
       {CLIPS.map((c) => { const from = at; const d = Math.ceil(secs(c) * FPS); const rate = Math.min(1, c.seconds / secs(c)); at += d; return (
         <Sequence key={c.file} from={from} durationInFrames={d} name={c.kicker}>
