@@ -140,14 +140,18 @@ for (const [w, h] of WIDTHS) {
   page.on("pageerror", (e) => errors.push(String(e).slice(0, 200)));
   for (const [name, url] of pages) {
     await page.goto(BASE + url, { waitUntil: "domcontentloaded" });
-    await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
     await page.waitForSelector("main h1, main h2", { timeout: 20000 }).catch(() => {});
+    // Hide the Next.js dev indicator. Injected only after the page has rendered: a <style> added before hydration can itself cause a mismatch.
+    await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
     await page.waitForTimeout(Number(process.env.SETTLE ?? 2500));
     const issues = await page.evaluate(audit);
     // Sticky chrome (sidebar, event ticker) would be painted mid-page in a stitched full-page shot, so grow the viewport to the page instead.
     const full = await page.evaluate(() => document.documentElement.scrollHeight);
     await page.setViewportSize({ width: w, height: Math.max(h, full) });
     await page.waitForTimeout(250);
+    // vh-sized blocks (the diff viewer) may have grown with the viewport: measure once more.
+    const full2 = await page.evaluate(() => document.documentElement.scrollHeight);
+    if (full2 > full) { await page.setViewportSize({ width: w, height: full2 }); await page.waitForTimeout(250); }
     await page.screenshot({ path: join(OUT, `${name}-${w}.png`), fullPage: true });
     await page.setViewportSize({ width: w, height: h });
     for (const e of errors.splice(0)) issues.push({ kind: "page-error", el: "window", detail: e });
