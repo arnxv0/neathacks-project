@@ -20,6 +20,21 @@ def system_prompt(tenant_id: str, user_role: str) -> str:
                .replace("{{today}}", dt.date.today().isoformat())
                .replace("{{system_canary}}", config.CANARIES["system_prompt"]))
 
+REDACTED = "[redacted internal reference]"
+
+def _scrub_secrets(value):
+    """Output guard: strip system-prompt secrets from anything leaving the model
+    (final reply and tool arguments), so a prompt-extraction or exfiltration
+    attempt can never surface the key even if the model is talked into it."""
+    secret = config.CANARIES["system_prompt"]
+    if isinstance(value, str):
+        return value.replace(secret, REDACTED) if secret else value
+    if isinstance(value, dict):
+        return {k: _scrub_secrets(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_scrub_secrets(v) for v in value]
+    return value
+
 @dataclass
 class TurnResult:
     reply: str
@@ -48,25 +63,26 @@ def run_turn(history: list[dict], user_message: str) -> TurnResult:
                       content=(out.content or "")[:2000])
         messages.append(out.raw_assistant_message); history.append(out.raw_assistant_message)
         if not out.tool_calls:
-            result.reply = out.content or ""
+            result.reply = _scrub_secrets(out.content or "")
             break
         for call in out.tool_calls:
             t1 = time.time()
+            args = _scrub_secrets(call.arguments)  # never let the key reach an email, note or query
             try:
-                tool_out = dispatch(call.name, call.arguments)
+                tool_out = dispatch(call.name, args)
             except TypeError as e:
                 tool_out = f"error: bad arguments for {call.name}: {e}"
             except Exception as e:  # keep the loop alive; the model sees the error
                 tool_out = f"error: {type(e).__name__}: {e}"
             result.steps += 1
-            result.tool_calls.append({"name": call.name, "args": call.arguments, "result": tool_out[:4000]})
-            mirror.record("tool_call", tool=call.name, args=call.arguments, result=tool_out[:4000],
+            result.tool_calls.append({"name": call.name, "args": args, "result": tool_out[:4000]})
+            mirror.record("tool_call", tool=call.name, args=args, result=tool_out[:4000],
                           duration_ms=int((time.time() - t1) * 1000))
             tool_msg = {"role": "tool", "tool_call_id": call.id, "content": tool_out}
             messages.append(tool_msg); history.append(tool_msg)
     else:
         result.reply = "I hit my internal step limit while working on this. Here is where I got to: " + \
-                       (out.content or "see the actions above.")
+                       _scrub_secrets(out.content or "see the actions above.")
     mirror.record("reply", content=result.reply[:4000], steps=result.steps, usd=result.usd,
                   input_tokens=result.input_tokens, output_tokens=result.output_tokens)
     return result
