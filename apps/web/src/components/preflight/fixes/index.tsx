@@ -85,12 +85,23 @@ export function DiffViewer({ diff }: { diff: string }) {
   );
 }
 
+/** `entire checkpoint explain` output is shown only when it is a real summary; CLI errors ("[entire exit 1] …",
+ *  "✗ No associated Entire checkpoint …") are replaced by a neutral line about what the commit actually carries. */
+function checkpointText(a: FixAttempt): { md?: string; note?: string } {
+  const md = (a.checkpoint_md ?? "").trim();
+  const isError = !md || /^\[entire exit \d+\]/.test(md) || /No associated Entire checkpoint|checkpoint not found/i.test(md);
+  if (!isError) return { md };
+  if (a.entire_checkpoint_id) return { note: `Entire-Checkpoint trailer ${a.entire_checkpoint_id} on commit ${shortId(a.commit ?? "")}` };
+  return { note: "no checkpoint recorded for this commit" };
+}
+
 export function CheckpointPanel({ a }: { a: FixAttempt }) {
+  const cp = checkpointText(a);
   return (
     <Card className="border-checkpoint/30 bg-checkpoint/5">
       <CardContent className="p-4 space-y-2">
-        <div className="flex items-center gap-2"><Tone tone="checkpoint">Entire checkpoint</Tone>{a.entire_checkpoint_id ? <Mono className="text-checkpoint">{a.entire_checkpoint_id}</Mono> : <Mono>linked by commit trailer</Mono>}{a.commit && <Mono>commit {shortId(a.commit)}</Mono>}</div>
-        {a.checkpoint_md ? <Markdown text={a.checkpoint_md.slice(0, 4000)} /> : <p className="text-xs text-muted-foreground">Every fixer commit is captured by Entire with the prompt, reasoning and tool calls behind it. Run <code className="mono">entire checkpoint explain {shortId(a.commit ?? "", 8)} --generate</code> in the target repo for the full intent/outcome summary.</p>}
+        <div className="flex items-center gap-2"><Tone tone="checkpoint">Entire checkpoint</Tone>{a.entire_checkpoint_id && <Mono className="text-checkpoint">{a.entire_checkpoint_id}</Mono>}{a.commit && <Mono>commit {shortId(a.commit)}</Mono>}</div>
+        {cp.md ? <Markdown text={cp.md.slice(0, 4000)} /> : <p className="text-xs text-muted-foreground mono">{cp.note}</p>}
         {a.summary && <details className="text-xs"><summary className="cursor-pointer text-muted-foreground">fixer summary</summary><p className="mt-2 whitespace-pre-wrap">{a.summary}</p></details>}
       </CardContent>
     </Card>

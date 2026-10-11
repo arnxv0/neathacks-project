@@ -42,7 +42,7 @@ Preflight crash-tests an AI agent before launch. It attacks the agent with hosti
 Routes under `/a/[id]`: Scorecard (hero before/after, attack matrix, clusters), **Pipeline** (live stage track, attack matrix progress, fixer lanes, event feed), Clusters (+ detail: hypothesis, entire-graph context, divergence timelines, neatlogs links), Fixes (+ detail: replay dots, Entire panel, diff, brief, attempts, Approve / Request changes / Edit / Reject), Regressions (table + blame card), Cost (tiles, budget gauge, cfo.ai inputs), Runs (transcript). Feature folders under `src/components/preflight/*`, registry components untouched in `src/components/ui`, typed API client + TanStack Query in `src/lib/api`, SSE hook in `src/lib/sse`.
 
 ### Videos (`apps/video`, Remotion)
-Two compositions: `PreflightExplainer` (1:56 explainer; also `PreflightExplainerSquare` 1:1 and the 30 s `PreflightTeaser16x9` / `PreflightTeaser9x16` for social) and `PreflightProductDemo` (real dashboard recordings captured by `scripts/record-dashboard.mjs` with Playwright, stitched with title cards and captions). Rendered files live in `docs/videos/`.
+Two compositions: `PreflightExplainer` (2:03 explainer; also `PreflightExplainerSquare` 1:1 and the 38 s `PreflightTeaser16x9` / `PreflightTeaser9x16` for social) and `PreflightProductDemo` (real dashboard recordings captured by `scripts/record-dashboard.mjs` with Playwright, stitched with title cards and captions). Rendered files live in `docs/videos/`.
 
 ### Explainer video details
 8 scenes (hook, attack, trace, fix, proof, regression, business, CTA), 1080p and 9:16 compositions, numbers injected from `out/report.json` by `scripts/video-props.py`. Rendered: `apps/video/out/preflight-explainer.mp4` (`make video`).

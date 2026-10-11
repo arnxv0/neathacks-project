@@ -90,7 +90,7 @@ def check_text(src: str, raw: str):
         n = int(m.group(1))
         if "test" in m.group(0) and "suite" not in m.group(0): fail(src, f"stale vocabulary '{m.group(0)}': say 'regression suites'")
         elif n not in (T["regression_suites_at_beat"], T["regression_suites_final"]): fail(src, f"'{m.group(0)}' not in ({T['regression_suites_at_beat']}, {T['regression_suites_final']})")
-    for m in re.finditer(r"\b(\d+)\s+(?:of \d+ )?(?:regression )?suites (?:failed|regressed)\b|\b(\d+)\s+regressed\b", t):
+    for m in re.finditer(r"\b(\d+)\s+(?:of \d+ )?(?:regression )?suites (?:failed|regressed)\b|(?<!of )\b(\d+)\s+regressed\b", t):
         n = int(m.group(1) or m.group(2))
         if n != T["regressed"]: fail(src, f"'{m.group(0)}' != {T['regressed']} regressed")
     for m in re.finditer(r"\b(\d+) of (\d+) suites\b", t):

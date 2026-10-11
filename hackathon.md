@@ -59,7 +59,7 @@ Full set of ten drafts with media in `social/build-in-public/` (gitignored; `app
 2. **The number.** "Clean full run of Preflight against our deliberately weak sales copilot: 23 of 50 attack runs got through before, 0 of 50 after. Repeated passes agree (22–23 → 0–5), and the same fixes take a gpt-4.1-mini build of the agent from 31/50 to 5/50. 15 root causes, 25 fix attempts, 16 permanent regression suites, $37 per assessment measured into the cfo.ai model. #neatHack" (attach `docs/evidence/scorecard-full-23-to-0.jpg`)
 3. **The honest one.** "Things that went wrong on the way and how the agent recovered: Xcode broke `make` mid-run (three first attempts failed tests, retries passed), the wall-clock cap stopped the run (resume picked up the fix branches), 11 of 15 approved branches conflicted with earlier merges (replayed on main, 2 needed a human). All in the report's recoveries[]. #neatHack"
 4. **Regression.** "I planted a harmless-looking refactor that undid the retry fix. Preflight reran its 15 regression suites: 4 of 15 regressed, all blamed to commit 1bbce14. #neatHack" (attach `docs/evidence/regression-caught-4-blamed.jpg`)
-5. **Video.** The square explainer (`preflight-explainer-square.mp4`, 1:56, captions burned in) + "watch the 0/4 → 20/20 replay bar".
+5. **Video.** The square explainer (`preflight-explainer-square.mp4`, 2:03, captions burned in) + "watch the 0/4 → 20/20 replay bar".
 
 ## Known limitations
 - Single-component target in the demo; multi-component manifests are supported in schemas but untested end to end.
