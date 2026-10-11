@@ -36,12 +36,19 @@ Target reset to `v0-unfixed`; `preflight run --mode full` (20 attacks, 50 seeds,
 - New **Pipeline** screen: live stage track, attack matrix lighting up as runs land, fixer lanes, event feed (all from the event ledger over SSE). Screenshot in `docs/evidence/pipeline-live.jpg`.
 
 ## Submission checklist
-- [ ] Public repos with hackathon-dated commits (Preflight repo is still private — owner to flip)
-- [ ] Before/after neatlogs traces with numbers (blocked on the ingest network filter)
-- [~] Entire: checkpoint trailers on every fixer commit + entire-graph impact/search in briefs and the cluster view (condensation blocked by an Entire hook hang, see DECISIONS.md)
-- [ ] cfo.ai plan with pricing, costs, revenue, runway + Measured scenario
-- [x] A run showing recovery from a failed action (fixer retry after failed replay → passed on attempt 2; merge conflict → verified on main; replay port collision → resumed from existing commits)
-- [ ] Demo video; #neatHack posts quoting the neatlogs post
+- [ ] **Public repo** with hackathon-dated commits — one repo, target vendored under `targets/`. Owner: `gh repo edit arnxv0/neathacks-project --visibility public --accept-visibility-change-consequences`
+- [x] Before/after neatlogs traces with numbers — full run `20261011-001111-d070`: 23/50 → 0/50, every run has a trace id; Preflight's own spans land too (`docs/evidence/report-full-20261011.json`)
+- [~] Entire: checkpoint trailers on fixer commits + entire-graph impact/search in briefs and the cluster view (checkpoint condensation still blocked by an Entire hook hang on macOS, see DECISIONS.md)
+- [ ] **cfo.ai** plan with pricing, costs, revenue, runway + Measured scenario — owner: sign up, build with Ari (BUSINESS.md §12, `cfo/assumptions.csv`), authenticate the `cfoai` MCP in `/mcp`; then push measured COGS ($0.006/run, $1.41/fix attempt, 1.67 attempts/fix, $37/assessment)
+- [x] A run showing recovery from a failed action — `recoveries[]` in the report: 6 failed fixer attempts retried, 2 fixer retries after failed replays (A5, A6 → K/K), 13 merge conflicts re-verified on main, wall-clock stop → `preflight resume`
+- [ ] **Demo video** — two narrated videos exist (dev-run numbers); re-render with the full-run numbers, then a final screen-recorded walkthrough
+- [ ] **#neatHack posts** quoting the neatlogs X post — owner (drafts below)
+
+### Post drafts (owner to publish, quote the neatlogs #neatHack post)
+1. **Kickoff / what it is.** "Building Preflight for #neatHack: it crash-tests an AI agent before launch. Hostile users, broken tools, poisoned data → deterministic graders → one Claude Code fixer per root cause → human approval → replay K× to prove it. Every run is a @neatlogs trace, every fix an @entire_io checkpoint. Repo: github.com/arnxv0/neathacks-project"
+2. **The number.** "Clean full run of Preflight against our deliberately weak sales copilot: 23 of 50 attack runs succeeded before, 0 of 50 after. 15 root causes, 15 fixes, 15 permanent regression tests. Cost per assessment: $37, measured, going into the cfo.ai model. #neatHack" (attach `docs/evidence/scorecard-*.jpg` or the pipeline GIF)
+3. **The honest one.** "Things that went wrong on the way and how the agent recovered: Xcode broke `make` mid-run (fixers' tests went red, retries passed), the wall-clock cap stopped the run (resume picked up the fix branches), 13 merge conflicts between parallel fixers (replayed on main, 2 needed a human). All in the report's recoveries[]. #neatHack"
+4. **Video.** Final demo video + "watch the 1/5 → 5/5 replay bar".
 
 ## Known limitations
 - Single-component target in the demo; multi-component manifests are supported in schemas but untested end to end.
