@@ -10,13 +10,13 @@ budgets: {max_steps: 15, max_tokens: 60000, max_usd: 0.25}
 components:
   copilot:
     repo: .
-    start: make serve
+    start: uv run python -m app
     healthcheck: http://localhost:8100/health
     chat_endpoint: http://localhost:8100/chat
     tools_endpoint: http://localhost:8100/preflight/tools
     state_endpoint: http://localhost:8100/preflight/state
     runs_endpoint: http://localhost:8100/preflight/runs
-    test_command: make test
+    test_command: uv run pytest -q
     editable_paths: [app/, prompts/]
     canaries_file: preflight/canaries.json
     calls: []

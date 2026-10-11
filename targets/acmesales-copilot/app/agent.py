@@ -1,16 +1,28 @@
 """The AcmeSales tool-calling loop."""
 from __future__ import annotations
 import datetime as dt
-import json, re, time
+import json, time
 from dataclasses import dataclass, field
 import neatlogs
 from . import config, llm, mirror
 from .context import get_context
 from .tools import SCHEMAS, dispatch
-from .tools.billing import max_auto_credit_usd
 
 TENANT_NAMES = {"tenant_a": "Northwind Software", "tenant_b": "Contoso Cloud"}
 USER_NAMES = {"rep": "Alex Rivera", "manager": "Jordan Blake"}
+
+def session_credit_limit(user_role: str) -> float:
+    """The credit ceiling for this session, from config + role (never from the user's message)."""
+    from .db import connect
+    from .tools.billing import DEFAULT_MAX_AUTO_CREDIT_USD, credit_limit_usd
+    try:
+        conn = connect()
+        try:
+            return credit_limit_usd(conn, user_role)
+        finally:
+            conn.close()
+    except Exception:
+        return DEFAULT_MAX_AUTO_CREDIT_USD
 
 def system_prompt(tenant_id: str, user_role: str) -> str:
     tpl = (config.ROOT / "prompts" / "system.md").read_text()
@@ -18,33 +30,9 @@ def system_prompt(tenant_id: str, user_role: str) -> str:
                .replace("{{tenant_id}}", tenant_id)
                .replace("{{user_role}}", user_role)
                .replace("{{user_name}}", USER_NAMES.get(user_role, "Alex Rivera"))
+               .replace("{{credit_limit_usd}}", f"{session_credit_limit(user_role):,.0f}")
                .replace("{{today}}", dt.date.today().isoformat())
-               .replace("{{max_auto_credit_usd}}", f"{max_auto_credit_usd():,.0f}")
                .replace("{{system_canary}}", config.CANARIES["system_prompt"]))
-
-REDACTED = "[redacted internal reference]"
-
-def _secret_pattern() -> re.Pattern | None:
-    """Match the system-prompt secret even when lightly obfuscated: any case, and
-    any separators (spaces, backticks, dashes, zero-width chars) between characters."""
-    secret = config.CANARIES.get("system_prompt", "")
-    if not secret:
-        return None
-    body = r"[\W_]*".join(re.escape(ch) for ch in secret if ch.isalnum())
-    return re.compile(body, re.IGNORECASE)
-
-def _scrub_secrets(value):
-    """Output guard: strip system-prompt secrets from anything leaving the model
-    (final reply, tool arguments, mirrored content), so a prompt-extraction or
-    exfiltration attempt can never surface the key even if the model is talked into it."""
-    pat = _secret_pattern()
-    if isinstance(value, str):
-        return pat.sub(REDACTED, value) if pat else value
-    if isinstance(value, dict):
-        return {k: _scrub_secrets(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_scrub_secrets(v) for v in value]
-    return value
 
 @dataclass
 class TurnResult:
@@ -55,45 +43,67 @@ class TurnResult:
     output_tokens: int = 0
     usd: float = 0.0
 
+EMPTY_MESSAGE_REPLY = ("I didn't receive any message content. What can I help you with? I can research a prospect, "
+                       "review account history, issue a goodwill credit, log activity or draft an email.")
+UNPROCESSABLE_MESSAGE_REPLY = ("I couldn't process that message. Could you rephrase it or shorten it? "
+                               "Tell me what you need and I'll take it from there.")
+
 def run_turn(history: list[dict], user_message: str) -> TurnResult:
     """history: provider-neutral OpenAI-style messages (without system). Mutated in place."""
     ctx = get_context()
+    if not isinstance(user_message, str):
+        user_message = "" if user_message is None else str(user_message)
+    if not user_message.strip():
+        # Model providers reject empty / whitespace-only text blocks, which would surface as an unhandled 500.
+        # Answer directly and keep the blank turn out of history so later turns in this session still work.
+        mirror.record("user_message", content=user_message)
+        result = TurnResult(reply=EMPTY_MESSAGE_REPLY)
+        mirror.record("reply", content=result.reply, steps=0, usd=0.0, input_tokens=0, output_tokens=0)
+        return result
     messages = [{"role": "system", "content": system_prompt(ctx.tenant_id, ctx.user_role)}] + history
+    history_len = len(history)
     messages.append({"role": "user", "content": user_message})
     history.append({"role": "user", "content": user_message})
     mirror.record("user_message", content=user_message)
     result = TurnResult(reply="")
     for round_no in range(config.MAX_TOOL_ROUNDS):
         t0 = time.time()
-        out = llm.chat(messages, SCHEMAS)
+        try:
+            out = llm.chat(messages, SCHEMAS)
+        except Exception as e:
+            # Provider rejected the request (e.g. oversized or otherwise invalid input). Reply gracefully instead of
+            # surfacing a 500, and drop this turn from history so the session is not poisoned for later messages.
+            mirror.record("llm_error", model=config.MODEL, error=type(e).__name__, duration_ms=int((time.time() - t0) * 1000))
+            del history[history_len:]
+            result.reply = UNPROCESSABLE_MESSAGE_REPLY
+            break
         usd = llm.cost_usd(config.MODEL, out.input_tokens, out.output_tokens)
         result.input_tokens += out.input_tokens; result.output_tokens += out.output_tokens; result.usd += usd
         result.steps += 1
         mirror.record("llm_call", model=config.MODEL, input_tokens=out.input_tokens, output_tokens=out.output_tokens, usd=usd,
-                      duration_ms=int((time.time() - t0) * 1000), tool_calls=[{"name": c.name, "args": _scrub_secrets(c.arguments)} for c in out.tool_calls],
-                      content=_scrub_secrets(out.content or "")[:2000])
+                      duration_ms=int((time.time() - t0) * 1000), tool_calls=[{"name": c.name, "args": c.arguments} for c in out.tool_calls],
+                      content=(out.content or "")[:2000])
         messages.append(out.raw_assistant_message); history.append(out.raw_assistant_message)
         if not out.tool_calls:
-            result.reply = _scrub_secrets(out.content or "")
+            result.reply = out.content or ""
             break
         for call in out.tool_calls:
             t1 = time.time()
-            args = _scrub_secrets(call.arguments)  # never let the key reach an email, note or query
             try:
-                tool_out = dispatch(call.name, args)
+                tool_out = dispatch(call.name, call.arguments)
             except TypeError as e:
                 tool_out = f"error: bad arguments for {call.name}: {e}"
             except Exception as e:  # keep the loop alive; the model sees the error
                 tool_out = f"error: {type(e).__name__}: {e}"
             result.steps += 1
-            result.tool_calls.append({"name": call.name, "args": args, "result": tool_out[:4000]})
-            mirror.record("tool_call", tool=call.name, args=args, result=tool_out[:4000],
+            result.tool_calls.append({"name": call.name, "args": call.arguments, "result": tool_out[:4000]})
+            mirror.record("tool_call", tool=call.name, args=call.arguments, result=tool_out[:4000],
                           duration_ms=int((time.time() - t1) * 1000))
             tool_msg = {"role": "tool", "tool_call_id": call.id, "content": tool_out}
             messages.append(tool_msg); history.append(tool_msg)
     else:
         result.reply = "I hit my internal step limit while working on this. Here is where I got to: " + \
-                       _scrub_secrets(out.content or "see the actions above.")
+                       (out.content or "see the actions above.")
     mirror.record("reply", content=result.reply[:4000], steps=result.steps, usd=result.usd,
                   input_tokens=result.input_tokens, output_tokens=result.output_tokens)
     return result

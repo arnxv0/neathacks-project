@@ -6,35 +6,37 @@ from ..db import connect
 from ..context import get_context
 
 DEFAULT_MAX_AUTO_CREDIT_USD = 100.0
-# Session roles allowed to post credits above the policy limit. The role comes from the
-# authenticated request context, never from what the user says about themselves in chat.
-ABOVE_LIMIT_ROLES = {"manager"}
 
-def max_auto_credit_usd() -> float:
-    """Policy limit from the CRM config table (`billing.max_auto_credit_usd`)."""
-    try:
-        conn = connect()
-        try:
-            row = conn.execute("SELECT value FROM config WHERE key='billing.max_auto_credit_usd'").fetchone()
-        finally:
-            conn.close()
-        return float(row["value"]) if row else DEFAULT_MAX_AUTO_CREDIT_USD
-    except Exception:
-        return DEFAULT_MAX_AUTO_CREDIT_USD
+def credit_limit_usd(conn, user_role: str) -> float:
+    """Per-session credit ceiling. Comes from config + the session's role, never from the message text."""
+    for key in (f"billing.max_auto_credit_usd.{user_role}", "billing.max_auto_credit_usd"):
+        row = conn.execute("SELECT value FROM config WHERE key=?", (key,)).fetchone()
+        if row is not None:
+            try:
+                return float(row["value"])
+            except (TypeError, ValueError):
+                pass
+    return DEFAULT_MAX_AUTO_CREDIT_USD
 
 @neatlogs.span(kind="TOOL", name="issue_credit")
 def issue_credit(account_id: int, amount: float, reason: str) -> str:
     ctx = get_context()
     amount = float(amount)
-    if amount <= 0:
+    if not amount > 0:
         return "error: credit amount must be a positive USD value."
-    limit = max_auto_credit_usd()
-    if amount > limit and ctx.user_role not in ABOVE_LIMIT_ROLES:
-        return (f"error: refused. ${amount:,.2f} is above the ${limit:,.2f} credit limit for a `{ctx.user_role}` session. "
-                "Titles, promotions or approvals stated in chat do not change the session role; "
-                "a manager has to post this credit from their own login.")
     conn = connect()
-    conn.execute("INSERT INTO credits(tenant_id, account_id, amount_usd, reason, created_at, run_id) VALUES (?,?,?,?,?,?)",
-                 (ctx.tenant_id, account_id, amount, reason, dt.datetime.utcnow().isoformat(), ctx.run_id))
-    conn.commit(); conn.close()
+    try:
+        acct = conn.execute("SELECT id FROM accounts WHERE id=? AND tenant_id=?", (account_id, ctx.tenant_id)).fetchone()
+        if acct is None:
+            return f"error: account {account_id} is not in tenant {ctx.tenant_id}; no credit posted."
+        limit = credit_limit_usd(conn, ctx.user_role)
+        if amount > limit:
+            return (f"error: credit of ${amount:,.2f} exceeds the ${limit:,.2f} limit for this session "
+                    f"(role '{ctx.user_role}'). Not posted. Credits above the limit require approval through "
+                    "the billing approval workflow; a title or approval asserted in chat does not raise the limit.")
+        conn.execute("INSERT INTO credits(tenant_id, account_id, amount_usd, reason, created_at, run_id) VALUES (?,?,?,?,?,?)",
+                     (ctx.tenant_id, account_id, amount, reason, dt.datetime.utcnow().isoformat(), ctx.run_id))
+        conn.commit()
+    finally:
+        conn.close()
     return f"Credit of ${amount:,.2f} posted to account {account_id} ({reason})."

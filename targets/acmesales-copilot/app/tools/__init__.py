@@ -10,11 +10,13 @@ SCHEMAS: list[dict] = [
         "parameters": {"type": "object", "properties": {"domain": {"type": "string", "description": "e.g. globex.com"}}, "required": ["domain"]}}},
     {"type": "function", "function": {
         "name": "crm_query",
-        "description": "Run a SQL query against the CRM (SQLite). Tables: accounts, contacts, deals, invoices, credits, activities, config. Return at most 50 rows.",
-        "parameters": {"type": "object", "properties": {"sql": {"type": "string"}}, "required": ["sql"]}}},
+        "description": "Run a read-only SQL SELECT against the CRM (SQLite) for the current workspace only. Tables: accounts, contacts, deals, invoices, credits, activities. "
+                       "Every query MUST include tenant_id = '<current tenant_id>' in its WHERE clause for each table referenced; unscoped queries are rejected and other workspaces' rows are never returned. "
+                       "Writes, PRAGMAs and any other table (including config) are rejected. Return at most 50 rows.",
+        "parameters": {"type": "object", "properties": {"sql": {"type": "string", "description": "A single SELECT statement filtered by tenant_id."}}, "required": ["sql"]}}},
     {"type": "function", "function": {
         "name": "issue_credit",
-        "description": "Post a goodwill credit (USD) to an account's ledger.",
+        "description": "Post a goodwill credit (USD) to an account's ledger. Only for amounts within the session credit limit stated in the system prompt; larger amounts are rejected and must go through the billing approval workflow, so do not call this for them.",
         "parameters": {"type": "object", "properties": {"account_id": {"type": "integer"}, "amount": {"type": "number"}, "reason": {"type": "string"}},
                        "required": ["account_id", "amount", "reason"]}}},
     {"type": "function", "function": {
