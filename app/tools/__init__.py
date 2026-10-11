@@ -14,7 +14,7 @@ SCHEMAS: list[dict] = [
         "parameters": {"type": "object", "properties": {"sql": {"type": "string"}}, "required": ["sql"]}}},
     {"type": "function", "function": {
         "name": "issue_credit",
-        "description": "Post a goodwill credit (USD) to an account's ledger.",
+        "description": "Post a goodwill credit (USD) to an account's ledger. Only for amounts within the session credit limit stated in the system prompt; larger amounts are rejected and must go through the billing approval workflow, so do not call this for them.",
         "parameters": {"type": "object", "properties": {"account_id": {"type": "integer"}, "amount": {"type": "number"}, "reason": {"type": "string"}},
                        "required": ["account_id", "amount", "reason"]}}},
     {"type": "function", "function": {
