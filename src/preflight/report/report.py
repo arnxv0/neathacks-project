@@ -48,6 +48,7 @@ def write(ledger: Ledger, specs: dict[str, AttackSpec], extra: dict | None = Non
               "clusters": [c.model_dump() for c in ledger.clusters()],
               "fixes": [a.model_dump() for c in ledger.clusters() for a in ledger.attempts(c.cluster_id)],
               "cost": {"target_usd": sum(r.usd for r in runs), "preflight_llm_usd": ledger.manifest().get("preflight_llm_usd", 0.0)},
+              "recoveries": recoveries(ledger),
               **(extra or {})}
     from . import cost_report
     report["cost_report"] = cost_report.write(ledger)
@@ -56,3 +57,29 @@ def write(ledger: Ledger, specs: dict[str, AttackSpec], extra: dict | None = Non
     (config.OUT_DIR).mkdir(exist_ok=True)
     shutil.copy(ledger.root / "report" / "report.json", config.OUT_DIR / "report.json")
     return report
+
+
+def recoveries(ledger: Ledger) -> list[dict]:
+    """Every point where the assessment hit a failed action and carried on: explicit `recovery` events (fixer retries after a
+    failed replay, merge conflicts resolved by re-checking main), trace lookups that fell back, fixer attempts that ended without
+    a usable commit or with red tests, and stop conditions. Read from events.jsonl so the report stands alone."""
+    out = []
+    path = ledger.root / "events.jsonl"
+    if not path.exists():
+        return out
+    for line in path.read_text().splitlines():
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        t = e.get("type")
+        if t == "recovery":
+            out.append({"kind": e.get("kind"), "cluster_id": e.get("cluster_id"), "attempt": e.get("attempt"), "detail": e.get("detail"), "ts": e.get("ts")})
+        elif t == "trace.fallback":
+            out.append({"kind": "trace_fallback", "run_id": e.get("run_id"), "detail": e.get("detail") or e.get("reason"), "ts": e.get("ts")})
+        elif t == "fix.attempt.done" and (not e.get("ok") or e.get("tests_green") is False):
+            out.append({"kind": "fixer_attempt_failed", "cluster_id": e.get("cluster_id"), "attempt": e.get("attempt"),
+                        "detail": e.get("error") or "tests red on the fix branch; failure text sent back to the fixer", "ts": e.get("ts")})
+        elif t == "fix.error":
+            out.append({"kind": "stopped", "detail": e.get("error"), "ts": e.get("ts")})
+    return out
