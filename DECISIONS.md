@@ -22,3 +22,7 @@ Owner decision: one public repo. The AcmeSales Copilot target now lives at `targ
 ## 2026-10-11 — neatlogs ingest reachable again
 
 The safebrowse.io interception of `ingest.neatlogs.com` is gone (real Amazon RSA cert, HTTP 401 on bare GET as expected). The read API with the new service-account token returns 6 `acmesales-copilot` traces from the 2026-10-10 17:23 PT regression run, so some spans were already exported. The Preflight-side workflow has 0 traces; check `neatlogs.init` in Preflight's own process on the next run.
+
+## 2026-10-11 — Xcode update broke `make`; fixers' first attempts failed tests for an environmental reason
+
+Xcode updated overnight and `/usr/bin/make` refused to run until `sudo xcodebuild -license accept` (no sudo available to the agent; Homebrew also refused). The target's `test_command` is `make test`, so the first fixer attempt of the first three clusters in `20261011-001111-d070` (a5-schema, a6-watchlist, b2-b3-retry) came back `tests_green=false` and burned a retry each (~$1.0–1.6 of Claude Code per attempt). Workaround: `~/.local/bin/make -> /Library/Developer/CommandLineTools/usr/bin/make` (GNU Make 3.81, runs without the license shim); `~/.local/bin` is first on PATH so the live coordinator picked it up with no restart. Preflight behaved correctly: it refused to treat an untested fix as done and handed the exact failure text to the retry. Follow-up: the dispatcher could recognise an environment failure of `test_command` (command not found / license prompt) and raise an `env.failed` recovery instead of spending a retry.
