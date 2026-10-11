@@ -57,11 +57,16 @@ class ClaudeCodeFixer:
         p = self._procs.get(h.cluster_id)
         if p is None:
             return FixResult(ok=False, error="no process")
-        try:
-            p.wait(timeout=timeout_s)
-        except subprocess.TimeoutExpired:
-            p.kill()
-            return FixResult(ok=False, error=f"fixer timed out after {timeout_s}s")
+        t0 = time.time()
+        while True:
+            try:
+                p.wait(timeout=15)
+                break
+            except subprocess.TimeoutExpired:
+                if time.time() - t0 > timeout_s:
+                    p.kill()
+                    return FixResult(ok=False, error=f"fixer timed out after {timeout_s}s")
+                _reap_stalled_entire_hooks()
         return self._collect(h)
 
     def _collect(self, h: FixHandle) -> FixResult:
@@ -103,3 +108,21 @@ class ClaudeCodeFixer:
         prompt = f"Read {message_path} and revise your fix accordingly. Keep the same rules as the original brief; commit once when done."
         self._launch(h, prompt, resume=h.session_id)
         return self.wait(h, timeout_s)
+
+
+def _reap_stalled_entire_hooks(max_age_s: int = 90) -> None:
+    """Entire's Claude Code stop hook can block for ~10 minutes during non-interactive sessions (see DECISIONS.md).
+    The session transcript is already saved by then; killing the stalled hook lets `claude -p` exit."""
+    try:
+        out = subprocess.run(["ps", "-ax", "-o", "pid=,etimes=,command="], capture_output=True, text=True).stdout
+    except Exception:
+        return
+    for line in out.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) < 3 or "entire hooks claude-code stop" not in parts[2]:
+            continue
+        try:
+            if int(parts[1]) > max_age_s:
+                os.kill(int(parts[0]), 15)
+        except (ValueError, ProcessLookupError, PermissionError):
+            pass
