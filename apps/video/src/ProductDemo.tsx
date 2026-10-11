@@ -1,21 +1,22 @@
 import React from "react";
-import { AbsoluteFill, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Audio, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { VO } from "./data/vo";
 import { Bg, FadeIn, Kicker } from "./ui/Frame";
 import type { ExplainerProps } from "./data/props";
 
 export const FPS = 30;
 
-type Clip = { file: string; seconds: number; kicker: string; title: string; caption: string };
+type Clip = { file: string; seconds: number; vo: string; kicker: string; title: string; caption: string };
 // Durations are trimmed to what the recordings contain; the recorder waits are the source of truth.
 export const CLIPS: Clip[] = [
-  { file: "01-scorecard.mp4", seconds: 7, kicker: "1 · attack", title: "20 attack types, 50 seeds, one scorecard", caption: "Hostile personas, chaos faults from a proxy, poisoned Crustdata records. 8 of 20 attacks got through on the first pass." },
-  { file: "02-pipeline.mp4", seconds: 8, kicker: "2 · pipeline", title: "Every stage, live from the event ledger", caption: "Attack → grade → cluster → diverge → fix → review → regress → after. Fixer lanes and a live feed stream over SSE." },
-  { file: "03-clusters.mp4", seconds: 11, kicker: "3 · explain", title: "Root cause and the first divergent step", caption: "Deterministic clustering, an analyst hypothesis with suspected files, entire-graph blast radius, the exact step where the run went wrong, a neatlogs trace link." },
-  { file: "04-fix.mp4", seconds: 11, kicker: "4 · fix", title: "One Claude Code fixer per root cause", caption: "Each fixer works in its own git worktree from a short brief. The diff is reviewed by a human: approve, request changes, edit, or reject." },
-  { file: "05-replay-proof.mp4", seconds: 8, kicker: "5 · prove", title: "Replay the exact failing runs", caption: "0 of 1 before the fix, 2 of 2 after, against the fixed branch. A fix only counts when every replay passes." },
-  { file: "06-regressions.mp4", seconds: 8, kicker: "6 · never again", title: "A refactor brought the bug back. The suite caught it.", caption: "Every approved fix is a permanent regression test. Preflight names the commit that reintroduced the injection." },
-  { file: "07-cost.mp4", seconds: 8, kicker: "7 · the business", title: "Every LLM call is metered", caption: "Measured cost per attack run and per assessment flow into the cfo.ai model as the Measured scenario." },
-  { file: "08-before-after.mp4", seconds: 6, kicker: "result", title: "3 of 3 → 0 of 3", caption: "Same seeds, merged main. The hero attack, indirect injection through a company record, is closed." },
+  { file: "01-scorecard.mp4", seconds: 7.4, vo: "pd-01", kicker: "1 · attack", title: "20 attack types, 50 seeds, one scorecard", caption: "Hostile personas, chaos faults from a proxy, poisoned Crustdata records. 8 of 20 attacks got through on the first pass." },
+  { file: "02-pipeline.mp4", seconds: 8.7, vo: "pd-02", kicker: "2 · pipeline", title: "Every stage, live from the event ledger", caption: "Attack → grade → cluster → diverge → fix → review → regress → after. Fixer lanes and a live feed stream over SSE." },
+  { file: "03-clusters.mp4", seconds: 11.9, vo: "pd-03", kicker: "3 · explain", title: "Root cause and the first divergent step", caption: "Deterministic clustering, an analyst hypothesis with suspected files, entire-graph blast radius, the exact step where the run went wrong, a neatlogs trace link." },
+  { file: "04-fix.mp4", seconds: 11.3, vo: "pd-04", kicker: "4 · fix", title: "One Claude Code fixer per root cause", caption: "Each fixer works in its own git worktree from a short brief. The diff is reviewed by a human: approve, request changes, edit, or reject." },
+  { file: "05-replay-proof.mp4", seconds: 8.0, vo: "pd-05", kicker: "5 · prove", title: "Replay the exact failing runs", caption: "0 of 1 before the fix, 2 of 2 after, against the fixed branch. A fix only counts when every replay passes." },
+  { file: "06-regressions.mp4", seconds: 8.4, vo: "pd-06", kicker: "6 · never again", title: "A refactor brought the bug back. The suite caught it.", caption: "Every approved fix is a permanent regression test. Preflight names the commit that reintroduced the injection." },
+  { file: "07-cost.mp4", seconds: 8.0, vo: "pd-07", kicker: "7 · the business", title: "Every LLM call is metered", caption: "Measured cost per attack run and per assessment flow into the cfo.ai model as the Measured scenario." },
+  { file: "08-before-after.mp4", seconds: 6.1, vo: "pd-08", kicker: "result", title: "3 of 3 → 0 of 3", caption: "Same seeds, merged main. The hero attack, indirect injection through a company record, is closed." },
 ];
 
 const Lower: React.FC<Clip> = (c) => {
@@ -59,23 +60,25 @@ const Fade: React.FC<{ frames: number; children: React.ReactNode }> = ({ frames,
   return <AbsoluteFill style={{ opacity: o, background: "var(--bg)" }}>{children}</AbsoluteFill>;
 };
 
-export const TITLE_FRAMES = 150, OUTRO_FRAMES = 150;
-export const DEMO_TOTAL = TITLE_FRAMES + OUTRO_FRAMES + CLIPS.reduce((n, c) => n + c.seconds * FPS, 0);
+const secs = (c: Clip) => Math.max(c.seconds, VO[c.vo] + 0.8);
+export const TITLE_FRAMES = Math.ceil((VO["pd-title"] + 1.2) * FPS), OUTRO_FRAMES = Math.ceil((VO["pd-outro"] + 1.5) * FPS);
+export const DEMO_TOTAL = TITLE_FRAMES + OUTRO_FRAMES + CLIPS.reduce((n, c) => n + Math.ceil(secs(c) * FPS), 0);
 
 export const ProductDemo: React.FC<ExplainerProps> = (p) => {
   let at = TITLE_FRAMES;
   return (
     <AbsoluteFill style={{ background: "var(--bg)" }}>
-      <Sequence from={0} durationInFrames={TITLE_FRAMES} name="title"><Fade frames={TITLE_FRAMES}><Title p={p} /></Fade></Sequence>
-      {CLIPS.map((c) => { const from = at; const d = c.seconds * FPS; at += d; return (
+      <Sequence from={0} durationInFrames={TITLE_FRAMES} name="title"><Fade frames={TITLE_FRAMES}><Title p={p} /></Fade><Audio src={staticFile("vo/pd-title.mp3")} /></Sequence>
+      {CLIPS.map((c) => { const from = at; const d = Math.ceil(secs(c) * FPS); const rate = Math.min(1, c.seconds / secs(c)); at += d; return (
         <Sequence key={c.file} from={from} durationInFrames={d} name={c.kicker}>
           <Fade frames={d}>
-            <AbsoluteFill><OffthreadVideo src={staticFile(`clips/${c.file}`)} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} /></AbsoluteFill>
+            <AbsoluteFill><OffthreadVideo src={staticFile(`clips/${c.file}`)} muted playbackRate={rate} style={{ width: "100%", height: "100%", objectFit: "cover" }} /></AbsoluteFill>
             <Lower {...c} />
+            <Audio src={staticFile(`vo/${c.vo}.mp3`)} />
           </Fade>
         </Sequence>
       ); })}
-      <Sequence from={at} durationInFrames={OUTRO_FRAMES} name="outro"><Fade frames={OUTRO_FRAMES}><Outro p={p} /></Fade></Sequence>
+      <Sequence from={at} durationInFrames={OUTRO_FRAMES} name="outro"><Fade frames={OUTRO_FRAMES}><Outro p={p} /></Fade><Audio src={staticFile("vo/pd-outro.mp3")} /></Sequence>
     </AbsoluteFill>
   );
 };
