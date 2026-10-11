@@ -219,7 +219,10 @@ def schema() -> list[dict]:
 
 
 # The after pass (VERIFY_AFTER) is written with kind='regression' and an `after-` run_id prefix; accept a literal kind too.
-_AFTER = "(kind = 'after' OR (kind = 'regression' AND run_id LIKE 'after-%'))"
+# An assessment can run the after pass more than once; only the newest run per (attack, seed) counts.
+_AFTER = ("(kind = 'after' OR (kind = 'regression' AND run_id LIKE 'after-%')) AND started_at = (SELECT MAX(r2.started_at) FROM runs r2 "
+          "WHERE r2.assessment_id = runs.assessment_id AND r2.attack_id = runs.attack_id AND r2.seed_id = runs.seed_id "
+          "AND (r2.kind = 'after' OR (r2.kind = 'regression' AND r2.run_id LIKE 'after-%')))")
 
 
 def _one(c: sqlite3.Connection, sql: str, params: tuple) -> sqlite3.Row:

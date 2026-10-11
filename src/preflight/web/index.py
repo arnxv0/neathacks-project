@@ -1,5 +1,6 @@
 """Read-side index over the ledger directory (mtime-cached)."""
 from __future__ import annotations
+from typing import Any
 import json, pathlib, time
 from .. import config
 from ..attacks import catalog
@@ -46,7 +47,12 @@ def summary(aid: str) -> dict:
     attack_runs = led.runs(kind="attack")
     all_runs = led.runs()
     sc = scorecard(attack_runs, sp)
-    after_runs = [r for r in all_runs if r.run_id.startswith("after-")]
+    # An assessment can run the after pass more than once (it re-runs after late approvals). The scorecard shows the
+    # latest pass only: the newest after-run per (attack, seed), not the sum of every pass.
+    latest: dict[tuple[str, str], Any] = {}
+    for r in sorted((r for r in all_runs if r.run_id.startswith("after-")), key=lambda r: r.started_at):
+        latest[(r.attack_id, r.seed_id)] = r
+    after_runs = list(latest.values())
     after = scorecard(after_runs, sp) if after_runs else None
     clusters = []
     for c in led.clusters():
