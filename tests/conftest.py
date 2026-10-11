@@ -14,3 +14,16 @@ def _isolated_ledger(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("NEATLOGS_TOKEN", raising=False)
     monkeypatch.delenv("NEATLOGS_PROJECT_ID", raising=False)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _no_docker(monkeypatch: pytest.MonkeyPatch):
+    """No test may reach a real Docker daemon: every docker invocation of the sandbox runtime is recorded instead."""
+    import subprocess
+    from preflight.sandbox import runtime
+    calls: list[list[str]] = []
+    def fake(argv, timeout, env=None):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, "", "")
+    monkeypatch.setattr(runtime, "_docker", fake)
+    yield calls

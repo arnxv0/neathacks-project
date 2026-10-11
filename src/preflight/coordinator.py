@@ -21,6 +21,7 @@ from .grading import grade_run
 from .replay import replay as replaymod, regress as regressmod
 from .models import Cluster, Seed as _Seed
 from .target import loader, manifest as manifestmod, process
+from .sandbox import applicable as sbx_applicable, fixing as sbx_fixing, registry as sbx_registry, runtime as sbx_runtime
 
 console = Console()
 
@@ -47,17 +48,24 @@ def ensure_proxy() -> None:
 
 class Coordinator:
     def __init__(self, target_dir: pathlib.Path, mode: str = "dev", attacks: str | None = None, assessment_id: str | None = None,
-                 seeds: int | None = None, label: str | None = None, no_fix: bool = False):
+                 seeds: int | None = None, label: str | None = None, no_fix: bool = False, allow_fix: bool = False):
         self.target_dir = pathlib.Path(target_dir).resolve()
+        # A target that lives in the sandbox (third-party repo added by URL) is find-only unless the owner opted in,
+        # is only started through sandbox.runtime (Docker), and gets its own port + ownership token.
+        self.sandbox = sbx_registry.by_path(self.target_dir)
+        self.allow_fix = bool(allow_fix and self.sandbox)
         self.mode = mode
         self.mcfg = config.CFG.modes[mode].model_copy()
         if seeds:
             self.mcfg.seeds_per_attack = seeds
         self.label = label
-        self.no_fix = no_fix
+        self.no_fix = no_fix or bool(self.sandbox and not allow_fix)
         self.selector = attacks or self.mcfg.attacks
         self.ledger = Ledger(assessment_id or new_assessment_id())
-        self.spec = loader.load(self.target_dir)
+        if self.sandbox:
+            self.spec = loader.load(self.target_dir, env=sbx_runtime.resolve(self.sandbox.slug), env_only=True)
+        else:
+            self.spec = loader.load(self.target_dir)
         self.guard = Guard(max_usd=self.mcfg.max_usd)
         self.gateway: Gateway | None = None
         self.specs: dict[str, AttackSpec] = {}
@@ -68,7 +76,8 @@ class Coordinator:
     def from_ledger(cls, assessment_id: str) -> "Coordinator":
         led = Ledger(assessment_id)
         m = led.manifest()
-        c = cls(pathlib.Path(m["target_dir"]), mode=m.get("mode", "dev"), attacks=m.get("attacks"), assessment_id=assessment_id)
+        c = cls(pathlib.Path(m["target_dir"]), mode=m.get("mode", "dev"), attacks=m.get("attacks"), assessment_id=assessment_id,
+                allow_fix=bool(m.get("allow_fix")))
         c.specs = {sp.id: sp for sp in catalog.select(catalog.load_all(), c.selector or "all")}
         if not c.specs:
             c.specs = {sp.id: sp for sp in catalog.load_all()}
@@ -105,10 +114,18 @@ class Coordinator:
         self.state("BOOT_TARGET")
         ensure_proxy()
         comp = self.spec.entry
-        process.ensure_running(comp, log_path=self.ledger.root / "target.log")
+        sandbox_meta = None
+        if self.sandbox:
+            if self.allow_fix:
+                sbx_fixing.require_allowed(self.sandbox)
+            running = sbx_runtime.start(self.sandbox.slug)      # refuses unless approved; Docker unless trusted + opted out
+            sandbox_meta = {"slug": self.sandbox.slug, "url": self.sandbox.url, "mode": running.mode, "container": running.container}
+            self.emit("sandbox.started", **sandbox_meta, port=running.port, reused=running.reused)
+        else:
+            process.ensure_running(comp, log_path=self.ledger.root / "target.log")
         health = httpx.get(comp.healthcheck, timeout=5).json()
         up = (health.get("upstreams") or {}).get("company_lookup", "")
-        if ":%d" % config.CFG.ports.get("proxy", 8300) not in up:
+        if not self.sandbox and ":%d" % config.CFG.ports.get("proxy", 8300) not in up:
             raise RuntimeError(f"target's company_lookup upstream is {up!r}, not the chaos proxy. Start the target with "
                                f"CRUSTDATA_BASE_URL={proxy_url()} (make dev-host does this).")
         self.state("VERIFY_OWNERSHIP")
@@ -118,13 +135,19 @@ class Coordinator:
         self.ledger.update_manifest(system=self.spec.system, target_dir=str(self.target_dir), target_commit=process.target_version(comp),
                                     mode=self.mode, attacks=self.selector, label=self.label, caps={"max_usd": self.mcfg.max_usd}, target_health=health,
                                     models=self.gateway.tiers, tools=man, started_at=dt.datetime.utcnow().isoformat(),
-                                    neatlogs_project=os.getenv("NEATLOGS_PROJECT_ID"))
+                                    neatlogs_project=os.getenv("NEATLOGS_PROJECT_ID"), sandbox=sandbox_meta, allow_fix=self.allow_fix)
         for w in man.get("warnings", []):
             console.print(f"[yellow]warn[/yellow] {w}")
 
     def attack(self) -> list[RunRecord]:
         self.state("ATTACK")
         specs = catalog.select(catalog.load_all(), self.selector)
+        if self.sandbox:   # only attacks whose requirements the manifest meets; the built-in target runs the selection as is
+            specs, skipped = sbx_applicable.select(specs, self.spec)
+            self.ledger.update_manifest(attacks_skipped=[{"attack_id": a.id, "reason": why} for a, why in skipped])
+            self.emit("attack.skipped", skipped=[{"attack_id": a.id, "reason": why} for a, why in skipped])
+            for a, why in skipped:
+                console.print(f"[yellow]skip[/] {a.id}: {why}")
         self.specs = {s.id: s for s in specs}
         jobs: list[tuple[AttackSpec, Seed]] = []
         for a in specs:
@@ -194,6 +217,8 @@ class Coordinator:
         runs_by_id = {r.run_id: r for r in runs}
         tools_meta = self.ledger.manifest().get("tools", {}).get("components", {}).get(self.spec.entrypoint, {}).get("tools", {})
         for c in clusters:
+            if c.component not in self.spec.components:   # clusters default to the demo's component name
+                c.component = self.spec.entrypoint
             self.ledger.write_cluster(c)
             self.emit("cluster.created", cluster_id=c.cluster_id, attack_ids=c.attack_ids, run_ids=c.run_ids, failing_graders=c.failing_graders)
         console.print(f"{len(clusters)} clusters from {sum(1 for r in runs if r.failed)} failed runs")
@@ -211,7 +236,8 @@ class Coordinator:
             self.ledger.write_cluster(c, divergence_md=md)
             try:
                 from .fix import entire as entiremod
-                g = entiremod.graph_context(self.spec.components[c.component].repo_path, c.suspected_paths, hyp)
+                # Entire tooling is never pointed at a third-party clone
+                g = "" if self.sandbox else entiremod.graph_context(self.spec.components[c.component].repo_path, c.suspected_paths, hyp)
                 if g:
                     (self.ledger.root / "clusters" / c.cluster_id / "graph.md").write_text("# entire-graph context\n\n" + g + "\n")
                     self.emit("graph.ready", cluster_id=c.cluster_id)
@@ -317,6 +343,8 @@ class Coordinator:
         if not clusters:
             return clusters
         self.state("FIX")
+        if self.sandbox:
+            sbx_fixing.prepare(self.sandbox.slug)   # trusted targets only; local `main` with the approved onboarding files
         self.fixer = dispatcher.pick_backend(config.CFG.fixers.get("max_turns", 60))
         console.print(f"fixer backend: {self.fixer.name}; {len(clusters)} clusters, up to {config.CFG.fixers.get('max_parallel', 3)} in parallel")
         out = []
@@ -365,6 +393,9 @@ class Coordinator:
         self.emit("merged", cluster_id=cluster_id, commit=a.commit, merge_commit=merge_sha, regression_file=str(reg))
         console.print(f"[green]merged[/] {a.branch} -> main ({merge_sha[:8]}); regression saved {reg.name}")
         dispatcher.remove_worktree(comp.repo_path, cluster_id)
+        if self.sandbox:
+            patch = sbx_fixing.export_patch(self.sandbox.slug)   # fixes leave the sandbox as a patch file, never as a push
+            self.emit("sandbox.patch_exported", cluster_id=cluster_id, path=str(patch) if patch else None)
         self._maybe_finish()
 
     def reject(self, cluster_id: str, reason: str) -> None:
@@ -515,6 +546,13 @@ class Coordinator:
         except (BudgetExceeded, Stopped) as e:
             self.emit("stopped", reason=str(e)); console.print(f"[red]stopped: {e}")
             rep = self.report(); self.state("STOPPED"); return rep
+        except sbx_registry.RegistryError as e:   # not approved, Docker missing, build failed, ...
+            self.emit("stopped", reason=str(e), code=e.code); console.print(f"[red]sandbox target refused: {e}")
+            self.ledger.update_manifest(error=str(e), error_code=e.code); self.state("STOPPED")
+            raise
+        finally:
+            if self.sandbox:
+                sbx_runtime.stop(self.sandbox.slug)   # a sandbox container never outlives its assessment
         awaiting = any(c.status == "await_approval" for c in clusters)
         rep = self.report(set_state=not awaiting)
         if self.no_fix or not clusters or all(c.status in ("merged", "rejected", "needs_human") for c in clusters):

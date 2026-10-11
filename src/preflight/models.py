@@ -28,6 +28,7 @@ class AttackSpec(BaseModel):
     fixture: str | None = None
     graders: list[str]
     rubric: str | None = None
+    applies_when: list[str] = Field(default_factory=list)   # optional: capabilities a target must have (sandbox/applicable.py)
     seeds: list[Seed] = Field(default_factory=list)
 
 class Step(BaseModel):
