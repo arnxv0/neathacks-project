@@ -10,12 +10,27 @@ from ..models import AttackSpec, Cluster, Replay, RunRecord, Seed
 from ..runner.session import run_one
 from ..target.loader import SystemSpec
 
+def _free_port(preferred: int) -> int:
+    """Each replay boots its own target; parallel clusters must not share a port."""
+    import socket
+    for cand in [preferred] + list(range(preferred + 1, preferred + 50)):
+        with socket.socket() as sock:
+            try:
+                sock.bind(("127.0.0.1", cand))
+                return cand
+            except OSError:
+                continue
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
 class ReplayTarget:
     """Boots the target from a worktree on the replay port with a throwaway DB + mirror."""
     def __init__(self, spec: SystemSpec, worktree: pathlib.Path, port: int | None = None, log_path: pathlib.Path | None = None):
         self.spec = spec
         self.worktree = worktree
-        self.port = port or config.CFG.ports.get("replay_target", 8101)
+        self.port = port or _free_port(config.CFG.ports.get("replay_target", 8101))
         self.tmp = pathlib.Path(tempfile.mkdtemp(prefix="preflight-replay-"))
         self.proc: subprocess.Popen | None = None
         self.log_path = log_path
