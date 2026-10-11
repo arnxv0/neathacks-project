@@ -1,0 +1,163 @@
+#!/usr/bin/bash
+# Preflight host bootstrap (EC2 user data, runs once as root on first boot; safe to re-run by hand:
+#   sudo bash /var/lib/cloud/instance/scripts/part-001). Terraform templatefile fills $${host} etc.; every other
+# `$${...}` in this file is escaped for Terraform. Log: /var/log/preflight-bootstrap.log
+set -euo pipefail
+exec > >(tee -a /var/log/preflight-bootstrap.log) 2>&1
+echo "=== preflight bootstrap start $(date -u +%FT%TZ) ==="
+
+HOST='${host}'
+REGION='${region}'
+REPO_URL='${repo_url}'
+GIT_REF='${git_ref}'
+JUDGE_USER='${judge_user}'
+JUDGE_PASSWORD_HASH='${judge_password_hash}'
+FIXERS_MAX_PARALLEL='${fixers_max_parallel}'
+
+PF_USER=preflight
+PF_HOME=/home/$PF_USER
+PF_REPO=/srv/preflight
+TARGET=/srv/acmesales-copilot
+export DEBIAN_FRONTEND=noninteractive
+
+# Run a command as the preflight user with its HOME and ~/.local/bin (uv, claude, entire) on PATH.
+as_pf() { sudo -u "$PF_USER" -H env HOME="$PF_HOME" PATH="$PF_HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" bash -c "$1"; }
+
+# ---------------------------------------------------------------- 1. packages (git 2.43 arm64: no Rosetta deadlock)
+apt-get update -y
+apt-get install -y git curl build-essential ca-certificates gnupg unzip jq python3 debian-keyring debian-archive-keyring apt-transport-https
+if ! command -v caddy >/dev/null; then
+  # Official Caddy repo: Ubuntu's own caddy (2.6) predates the `basic_auth` directive used in our Caddyfile.
+  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
+  apt-get update -y && apt-get install -y caddy
+fi
+if ! command -v node >/dev/null || [ "$(node -v | cut -c2-3)" != "22" ]; then
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  apt-get install -y nodejs
+fi
+if ! command -v aws >/dev/null; then
+  apt-get install -y awscli || {
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o /tmp/awscliv2.zip
+    rm -rf /tmp/aws && unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install --update; }
+fi
+
+# ---------------------------------------------------------------- 2. swap (2 GB: lets 2 fixers + replays fit 4 GB)
+if ! swapon --show | grep -q /swapfile; then
+  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+sysctl -w vm.swappiness=20 >/dev/null
+
+# ---------------------------------------------------------------- 3. user
+id -u $PF_USER >/dev/null 2>&1 || useradd -m -s /bin/bash $PF_USER
+mkdir -p /srv /etc/preflight && chown $PF_USER:$PF_USER /srv
+
+# ---------------------------------------------------------------- 4. toolchain for the preflight user
+as_pf 'command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh'
+as_pf 'command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash'
+as_pf 'command -v entire >/dev/null || curl -fsSL https://entire.io/install.sh | bash'
+as_pf 'entire plugin install graph --allow-unverified >/dev/null 2>&1 || true'
+as_pf 'git config --global user.name "Preflight Fixer" && git config --global user.email "preflight@'"$HOST"'" && git config --global init.defaultBranch main'
+
+# ---------------------------------------------------------------- 5. Preflight checkout
+if [ ! -d $PF_REPO/.git ]; then
+  as_pf "git clone -q '$REPO_URL' $PF_REPO"
+fi
+as_pf "cd $PF_REPO && git fetch -q origin && git checkout -q '$GIT_REF' && (git symbolic-ref -q HEAD >/dev/null && git pull -q --ff-only || true)"
+# !!! NEVER run `entire enable` in $PF_REPO. Entire snapshots every Claude Code session in the repo it is enabled in and
+# !!! pushes the checkpoints; on 2026-10-11 that leaked API keys from an interactive session to the public repo
+# !!! (DECISIONS.md "Incident: Entire session snapshots"). Entire belongs in the target checkout only (step 6).
+
+# ---------------------------------------------------------------- 6. target checkout (the Makefile `target-checkout` recipe)
+if [ ! -d $TARGET/.git ]; then
+  as_pf "cd $PF_REPO && git branch -D _target-split >/dev/null 2>&1 || true"
+  as_pf "cd $PF_REPO && git subtree split --prefix=targets/acmesales-copilot -b _target-split"
+  as_pf "git clone -q -b _target-split $PF_REPO $TARGET"
+  as_pf "cd $PF_REPO && git branch -D _target-split"
+  as_pf "cd $TARGET && git checkout -q -b main && git branch -D _target-split && git remote remove origin && (git tag v0-unfixed d2ffde1 2>/dev/null || git tag v0-unfixed \$(git rev-list --max-parents=0 HEAD))"
+fi
+
+# ---------------------------------------------------------------- 7. python deps (replay boots the target's own .venv)
+as_pf "cd $PF_REPO && uv sync -q"
+as_pf "cd $TARGET && uv sync -q"
+
+# ---------------------------------------------------------------- 8. Entire, in the TARGET only (see step 5)
+as_pf "cd $TARGET && entire enable --yes --agent claude-code"
+as_pf "cd $TARGET && python3 - <<'PY'
+import json, pathlib
+p = pathlib.Path('.entire/settings.json'); d = json.loads(p.read_text()) if p.exists() else {}
+d['enabled'] = True; d['commit_linking'] = 'always'
+p.write_text(json.dumps(d, indent=2) + '\n')
+PY"
+as_pf "cd $TARGET && git add -A .entire && (git diff --cached --quiet || git commit -q -m 'Enable Entire (commit_linking=always) on the demo host')"
+
+# ---------------------------------------------------------------- 9. secrets from SSM -> .env files (never in tfvars/state)
+ssm_get() { aws ssm get-parameter --region "$REGION" --with-decryption --name "/preflight/$1" --query Parameter.Value --output text 2>/dev/null || echo "$${2:-}"; }
+export AWS_DEFAULT_REGION="$REGION"
+aws ssm get-parameters-by-path --region "$REGION" --path /preflight --with-decryption --query 'Parameters[].Name' --output text | tr '\t' '\n' | sed 's#^#ssm: #'
+LITELLM_BASE_URL=$(ssm_get LITELLM_BASE_URL "https://litellm.vision.aivar.app/v1")
+LITELLM_API_KEY=$(ssm_get LITELLM_API_KEY)
+NEATLOGS_API_KEY=$(ssm_get NEATLOGS_API_KEY)
+NEATLOGS_PROJECT_ID=$(ssm_get NEATLOGS_PROJECT_ID "2d5433a0-d4a3-45cf-99f8-aa80525d3d56")
+NEATLOGS_TOKEN=$(ssm_get NEATLOGS_TOKEN)
+CRUSTDATA_API_KEY=$(ssm_get CRUSTDATA_API_KEY)
+PREFLIGHT_OWNERSHIP_TOKEN=$(ssm_get PREFLIGHT_OWNERSHIP_TOKEN)
+CLAUDE_CODE_OAUTH_TOKEN=$(ssm_get CLAUDE_CODE_OAUTH_TOKEN)
+for v in LITELLM_API_KEY CRUSTDATA_API_KEY PREFLIGHT_OWNERSHIP_TOKEN CLAUDE_CODE_OAUTH_TOKEN; do
+  [ -n "$${!v}" ] || echo "WARN: /preflight/$v is empty in SSM"
+done
+
+umask 077
+cat > $PF_REPO/.env <<EOF
+LITELLM_BASE_URL=$LITELLM_BASE_URL
+LITELLM_API_KEY=$LITELLM_API_KEY
+NEATLOGS_API_KEY=$NEATLOGS_API_KEY
+NEATLOGS_PROJECT_ID=$NEATLOGS_PROJECT_ID
+NEATLOGS_TOKEN=$NEATLOGS_TOKEN
+CRUSTDATA_API_KEY=$CRUSTDATA_API_KEY
+PREFLIGHT_OWNERSHIP_TOKEN=$PREFLIGHT_OWNERSHIP_TOKEN
+FIXER_BACKEND=claude
+PREFLIGHT_CORS_ORIGINS=https://$HOST
+EOF
+# Target .env = its .env.example with the keys filled and company_lookup routed through the chaos proxy.
+sed -e "s#^LITELLM_BASE_URL=.*#LITELLM_BASE_URL=$LITELLM_BASE_URL#" \
+    -e "s#^LITELLM_API_KEY=.*#LITELLM_API_KEY=$LITELLM_API_KEY#" \
+    -e "s#^NEATLOGS_API_KEY=.*#NEATLOGS_API_KEY=$NEATLOGS_API_KEY#" \
+    -e "s#^CRUSTDATA_API_KEY=.*#CRUSTDATA_API_KEY=$CRUSTDATA_API_KEY#" \
+    -e "s#^CRUSTDATA_BASE_URL=.*#CRUSTDATA_BASE_URL=http://127.0.0.1:8300#" \
+    -e "s#^PREFLIGHT_OWNERSHIP_TOKEN=.*#PREFLIGHT_OWNERSHIP_TOKEN=$PREFLIGHT_OWNERSHIP_TOKEN#" \
+    $TARGET/.env.example > $TARGET/.env
+grep -q '^NEATLOGS_PROJECT_ID=' $TARGET/.env || echo "NEATLOGS_PROJECT_ID=$NEATLOGS_PROJECT_ID" >> $TARGET/.env
+chown $PF_USER:$PF_USER $PF_REPO/.env $TARGET/.env; chmod 600 $PF_REPO/.env $TARGET/.env
+# Only the API unit reads this (systemd loads it as root). No ANTHROPIC_API_KEY anywhere: it would override the token.
+printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\nHOME=%s\n' "$CLAUDE_CODE_OAUTH_TOKEN" "$PF_HOME" > /etc/preflight/fixer.env
+chmod 600 /etc/preflight/fixer.env
+umask 022
+
+# ---------------------------------------------------------------- 10. sizing: fixers in parallel
+sed -i -E "s/max_parallel: [0-9]+/max_parallel: $FIXERS_MAX_PARALLEL/" $PF_REPO/config.yaml
+grep -n max_parallel $PF_REPO/config.yaml
+
+# ---------------------------------------------------------------- 11. dashboard production build (API origin baked in)
+as_pf "cd $PF_REPO/apps/web && npm ci --no-audit --no-fund && NEXT_PUBLIC_API_URL=https://$HOST NODE_OPTIONS=--max-old-space-size=3072 npm run build"
+
+# ---------------------------------------------------------------- 12. systemd units + Caddy
+install -m 644 $PF_REPO/deploy/aws/preflight-proxy.service $PF_REPO/deploy/aws/preflight-target.service \
+               $PF_REPO/deploy/aws/preflight-api.service   $PF_REPO/deploy/aws/preflight-web.service /etc/systemd/system/
+sed -e "s|__HOST__|$HOST|g" -e "s|__JUDGE_USER__|$JUDGE_USER|g" -e "s|__JUDGE_PASSWORD_HASH__|$JUDGE_PASSWORD_HASH|g" \
+    $PF_REPO/deploy/aws/Caddyfile > /etc/caddy/Caddyfile
+mkdir -p /var/log/caddy && chown caddy:caddy /var/log/caddy
+caddy validate --config /etc/caddy/Caddyfile
+systemctl daemon-reload
+for u in preflight-proxy preflight-target preflight-api preflight-web caddy; do
+  systemctl enable "$u" >/dev/null
+  systemctl restart "$u"
+  sleep 2
+done
+sleep 5
+systemctl --no-pager --plain -q is-active preflight-proxy preflight-target preflight-api preflight-web caddy || systemctl --no-pager status 'preflight-*' caddy || true
+curl -fsS http://127.0.0.1:8300/health >/dev/null && echo "proxy ok" || echo "WARN: proxy not healthy yet"
+curl -fsS http://127.0.0.1:8100/health | jq -c '.upstreams' || echo "WARN: target not healthy yet"
+curl -fsS http://127.0.0.1:8200/api/health || true
+echo "=== preflight bootstrap done $(date -u +%FT%TZ): https://$HOST (user $JUDGE_USER) ==="

@@ -1,0 +1,22 @@
+[Unit]
+Description=AcmeSales Copilot demo target (:8100, loopback) with company_lookup routed through the chaos proxy
+After=network-online.target preflight-proxy.service
+Wants=network-online.target
+Requires=preflight-proxy.service
+
+[Service]
+Type=simple
+User=preflight
+Group=preflight
+WorkingDirectory=/srv/acmesales-copilot
+Environment=HOME=/home/preflight
+Environment=PATH=/home/preflight/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# .env carries CRUSTDATA_BASE_URL=http://127.0.0.1:8300; Preflight refuses the target if /health shows another upstream.
+EnvironmentFile=/srv/acmesales-copilot/.env
+Environment=CRUSTDATA_BASE_URL=http://127.0.0.1:8300
+ExecStart=/home/preflight/.local/bin/uv run --no-sync uvicorn app.main:app --host 127.0.0.1 --port 8100
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

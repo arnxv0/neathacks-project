@@ -20,3 +20,6 @@ Session.vim
 apps/video/out/
 apps/video/node_modules/
 social/
+deploy/aws/terraform/.terraform/
+deploy/aws/terraform/*.tfstate*
+deploy/aws/terraform/terraform.tfvars

@@ -1,0 +1,25 @@
+[Unit]
+Description=Preflight web API (:8200, loopback): REST + SSE over the ledger, review actions, run launcher (fixers are its grandchildren)
+After=network-online.target preflight-proxy.service preflight-target.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=preflight
+Group=preflight
+WorkingDirectory=/srv/preflight
+Environment=HOME=/home/preflight
+Environment=PATH=/home/preflight/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# /srv/preflight/.env is loaded by the package itself (python-dotenv). fixer.env (root 0600; systemd reads it before
+# dropping privileges) holds only CLAUDE_CODE_OAUTH_TOKEN, which clean_env() passes through to `claude -p`.
+# No ANTHROPIC_API_KEY anywhere on the box: it would override the token.
+EnvironmentFile=/etc/preflight/fixer.env
+ExecStart=/home/preflight/.local/bin/uv run --no-sync preflight web --host 127.0.0.1 --port 8200
+Restart=always
+RestartSec=3
+# A full assessment in progress must not be killed by a slow stop.
+TimeoutStopSec=60
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

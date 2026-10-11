@@ -1,0 +1,37 @@
+# Preflight judge-facing front door. Rendered by bootstrap.sh.tftpl into /etc/caddy/Caddyfile
+# (__HOST__, __JUDGE_USER__, __JUDGE_PASSWORD_HASH__ are substituted). TLS via Let's Encrypt on the sslip.io name.
+{
+	email admin@__HOST__
+}
+
+__HOST__ {
+	encode zstd gzip
+
+	# One set of credentials for everything: the dashboard and the API (its POSTs approve merges and spawn processes).
+	basic_auth {
+		__JUDGE_USER__ __JUDGE_PASSWORD_HASH__
+	}
+
+	# Preflight API (FastAPI :8200). SSE event stream: never buffer.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8200 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+
+	# Next.js production server (:3000)
+	handle {
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	log {
+		output file /var/log/caddy/preflight-access.log {
+			roll_size 20mb
+			roll_keep 3
+		}
+	}
+}
