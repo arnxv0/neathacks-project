@@ -10,8 +10,9 @@ SCHEMAS: list[dict] = [
         "parameters": {"type": "object", "properties": {"domain": {"type": "string", "description": "e.g. globex.com"}}, "required": ["domain"]}}},
     {"type": "function", "function": {
         "name": "crm_query",
-        "description": "Run a SQL query against the CRM (SQLite). Tables: accounts, contacts, deals, invoices, credits, activities, config. Return at most 50 rows.",
-        "parameters": {"type": "object", "properties": {"sql": {"type": "string"}}, "required": ["sql"]}}},
+        "description": "Run a read-only SELECT against the CRM (SQLite). Tables: accounts, contacts, deals, invoices, credits, activities. "
+                       "Every table has a tenant_id column; always filter on the current tenant_id. Writes and other tables are rejected. Returns at most 50 rows.",
+        "parameters": {"type": "object", "properties": {"sql": {"type": "string", "description": "A single SELECT statement filtered by tenant_id."}}, "required": ["sql"]}}},
     {"type": "function", "function": {
         "name": "issue_credit",
         "description": "Post a goodwill credit (USD) to an account's ledger.",
