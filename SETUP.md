@@ -101,6 +101,15 @@ make video             # beat 7 support: re-render the explainer with the measur
 ```
 Then push `out/cost_report.csv` values into the cfo.ai "Measured" scenario through its MCP server (`claude mcp add --transport http cfoai https://api.cfo.ai/mcp`).
 
+### Live demo deployment (AWS, one host)
+
+For a judge-facing instance over HTTPS with basic auth, `deploy/aws/` holds a Terraform stack (one Graviton EC2 host,
+Ubuntu 24.04 arm64, Elastic IP, Caddy on `*.sslip.io`) whose user-data bootstrap performs sections 1–3 above on the box,
+with the fixers running under a `claude setup-token` OAuth token and all secrets read from SSM Parameter Store.
+`make aws-up` / `make aws-down`, or the plain `terraform` commands, costs, runbook and teardown are in
+[`deploy/aws/README.md`](deploy/aws/README.md). Entire is enabled only in the target checkout there, never in the
+Preflight repo (see the 2026-10-11 incident in `DECISIONS.md`).
+
 ## 6. Where results live
 
 - `ledger/<assessment_id>/` — every run (`transcript.md`, `steps.jsonl`, `verdicts.json`), cluster (`divergence.md`, `graph.md`), fix (`brief.md`, `diff.patch`, `attempt.json`, `fixer.log`), `events.jsonl`, `report/`.

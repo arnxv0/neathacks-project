@@ -5,7 +5,7 @@ MODE ?= dev
 PROXY_PORT ?= 8300
 export PATH := $(HOME)/.local/bin:$(PATH)
 
-.PHONY: target-checkout target-sync setup up down logs dev-host target-host proxy-host api-host web-host run run-full demo test regress stop clean-ledger
+.PHONY: target-checkout target-sync setup up down logs dev-host target-host proxy-host api-host web-host run run-full demo test regress stop clean-ledger aws-up aws-down
 
 target-checkout:  ## materialise the vendored target (targets/acmesales-copilot) as its own git repo at $(TARGET), same SHAs + v0-unfixed tag
 	@test ! -e $(TARGET) || { echo "$(TARGET) already exists"; exit 1; }
@@ -80,6 +80,14 @@ regress-demo:     ## reintroduce the D1 weakness in the target with a plausible 
 video:            ## render the explainer with measured numbers from out/report.json
 	python3 scripts/video-props.py
 	cd apps/video && npx remotion render PreflightExplainer out/preflight-explainer.mp4 --browser-executable="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+# --- AWS judge-facing deployment (deploy/aws/README.md); secrets come from SSM, tfvars from terraform.tfvars ---
+aws-up:           ## terraform init + apply the single-host stack, then print the URL
+	terraform -chdir=deploy/aws/terraform init -input=false
+	terraform -chdir=deploy/aws/terraform apply
+	terraform -chdir=deploy/aws/terraform output
+aws-down:         ## destroy the stack (instance, disk, SG, IAM, key pair; releases the Elastic IP)
+	terraform -chdir=deploy/aws/terraform destroy
 
 demo-reset:       ## reset the target to v0-unfixed and clear regressions + ledger before recording
 	./scripts/demo-reset.sh $(TARGET)
