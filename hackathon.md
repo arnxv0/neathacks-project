@@ -26,14 +26,16 @@
 - Entire: commit condensation hangs in Entire's post-commit hook during agent sessions, so Preflight now commits on the fixer's behalf after the session ends (trailer kept, no hang). entire-graph installed: `impact`/`search` output (blast radius, co-change coupling between `crustdata.py` and `system.md`) goes into every fixer brief and the cluster view.
 - Remotion explainer (`apps/video`): 8 scenes, numbers injected from `out/report.json` (`make video`). First render done.
 - Evening: P0 fixers (3 in parallel) → authority/confirmation fix **0/3 → 6/6** merged; prompt-leak fix failed replay on attempt 1 (prompt-only change), fixer got the failing transcripts back and passed **0/1 → 2/2** on attempt 2 with an output redaction guard; merged. Found and fixed a real concurrency bug while doing it: parallel replays shared one port.
+- Second assessment finished: **8/20 → 2/20** after three merged fixes; regression suite **6/6 holding**. The two leftovers (crash on empty input, wall-clock loop) were never dispatched because crashed runs were skipped by the clusterer; fixed for the next run.
+- Regression beat verified (`make regress-demo`): a planted "refactor: simplify system prompt wording" commit reintroduced the injection; the suite caught it (`REGRESSED d1-watchlist-2884e5`) and blamed commit 3a43335. Evidence: `docs/evidence/regression-caught-blame.json`.
 - New **Pipeline** screen: live stage track, attack matrix lighting up as runs land, fixer lanes, event feed (all from the event ledger over SSE). Screenshot in `docs/evidence/pipeline-live.jpg`.
 
 ## Submission checklist
 - [ ] Public repos with hackathon-dated commits (Preflight repo is still private — owner to flip)
 - [ ] Before/after neatlogs traces with numbers (blocked on the ingest network filter)
-- [ ] Entire checkpoints / `entire checkpoint explain` output
+- [~] Entire: checkpoint trailers on every fixer commit + entire-graph impact/search in briefs and the cluster view (condensation blocked by an Entire hook hang, see DECISIONS.md)
 - [ ] cfo.ai plan with pricing, costs, revenue, runway + Measured scenario
-- [ ] A run showing recovery from a failed action (fixer retry after failed tests → passed; merge conflict → verified on main)
+- [x] A run showing recovery from a failed action (fixer retry after failed replay → passed on attempt 2; merge conflict → verified on main; replay port collision → resumed from existing commits)
 - [ ] Demo video; #neatHack posts quoting the neatlogs post
 
 ## Known limitations
