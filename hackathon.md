@@ -54,7 +54,7 @@ Target reset to `v0-unfixed`; `preflight run --mode full` (20 attacks, 50 seeds,
 
 ### Post drafts (owner to publish, quote the neatlogs #neatHack post)
 1. **Kickoff / what it is.** "Building Preflight for #neatHack: it crash-tests an AI agent before launch. Hostile users, broken tools, poisoned data → deterministic graders → one Claude Code fixer per root cause → human approval → replay K× to prove it. Every run is a @neatlogs trace, every fix an @entire_io checkpoint. Repo: github.com/arnxv0/neathacks-project"
-2. **The number.** "Clean full run of Preflight against our deliberately weak sales copilot: 23 of 50 attack runs succeeded before, 0 of 50 after. 15 root causes, 15 fixes, 15 permanent regression tests. Cost per assessment: $37, measured, going into the cfo.ai model. #neatHack" (attach `docs/evidence/scorecard-*.jpg` or the pipeline GIF)
+2. **The number.** "Clean full run of Preflight against our deliberately weak sales copilot: 23 of 50 attack runs succeeded before, 0 of 50 after. Repeated passes agree (22–23 → 0–5), and the same fixes take a gpt-4.1-mini build of the agent from 31/50 to 5/50. 15 root causes, 16 permanent regression tests, $37 per assessment measured into the cfo.ai model. #neatHack" (attach `docs/evidence/scorecard-*.jpg` or the pipeline GIF)
 3. **The honest one.** "Things that went wrong on the way and how the agent recovered: Xcode broke `make` mid-run (fixers' tests went red, retries passed), the wall-clock cap stopped the run (resume picked up the fix branches), 13 merge conflicts between parallel fixers (replayed on main, 2 needed a human). All in the report's recoveries[]. #neatHack"
 4. **Video.** Final demo video + "watch the 1/5 → 5/5 replay bar".
 

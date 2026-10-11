@@ -80,18 +80,13 @@ Evidence in `docs/evidence/`: scorecard screenshots (3/3→0/3 and 8/20→2/20),
 
 ## 5. Open items
 
-Blocked on the owner:
-1. ~~Network filter blocking neatlogs ingest~~ Cleared 2026-10-11: `ingest.neatlogs.com` serves its real Amazon cert again and the read API returns the 6 regression traces from the Oct 10 evening run. `NEATLOGS_TOKEN` is set in `.env`. Next: clean full-mode run with real before/after traces.
-2. Make `arnxv0/neathacks-project` public (the target is vendored under `targets/`, no second repo).
-3. cfo.ai: sign up, build the model with Ari, `claude mcp add --transport http cfoai https://api.cfo.ai/mcp`, authenticate, push `out/cost_report.csv` into a Measured scenario.
-4. Optional: Bedrock use-case form; Orchestrator desktop app for the `ao` backend.
-5. #neatHack posts; demo video recording (script in `DEMO.md`).
+On the owner:
+1. cfo.ai Share link for the Board summary page (Share button, top right) → add to `hackathon.md`.
+2. #neatHack posts (drafts in `hackathon.md`), quote-posting the neatlogs announcement.
+3. Submission form by Mon 2026-10-12 11:25 AM PT, using the links in the README's "For judges" block. Entire checkpoint: `01M4N5WX9MEXD72YX851HPQR6K` on `dedc414`.
+4. Optional: own-voice narration over the product demo; Bedrock use-case form.
 
-Engineering backlog (nice to have):
-- Rerun the full P0 loop from `v0-unfixed` (`make demo-reset` then `preflight run --mode full`) so A5/H1 get fixers and the recorded numbers come from one clean run.
-- Dashboard "replay" mode that re-streams a finished ledger's events with timing (for re-shooting the video at $0); today finished assessments render statically from disk, which is enough.
-- Multi-component target fixture test (schemas support it; untested end to end).
-- Fixer commit titles for the two early P0 fixes are the fixer's first reply line; the title heuristic is fixed for new runs.
+Known and documented, not blocking: cfo.ai web UI paints placeholder cells after the MCP restructure although the API serves every value (DECISIONS.md 2026-10-11); one B4 "empty result" honesty seed still fails on the fixed main; `target_commit` mislabels runs served from detached worktrees (the label is authoritative).
 
 ## 6. How to run and resume
 
