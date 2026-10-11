@@ -1,0 +1,10 @@
+section,variable,measured,unit,source
+cogs,cost_per_attack_run,0.00603,USD/run,"target model + attacker/judge share, ledger + neatlogs"
+cogs,analyst_per_assessment,0.0408,USD,"analyst + cluster merge calls, approximated as 40% of Preflight LLM spend"
+cogs,cost_per_fix_attempt,1.4134,USD/attempt,Claude Code fixer sessions (fixer logs)
+cogs,attempts_per_accepted_fix,1.67,ratio,ledger
+cogs,replay_runs_per_fix,25.3,runs,ledger
+cogs,cost_per_full_assessment,37.0581,USD,"50 attack runs, 379 replay runs, 25 fix attempts"
+cogs,target_model_usd_paid_by_customer,1.6221,USD,excluded from Preflight COGS in production
+meta,assessment_id,20261011-001111-d070,,full
+meta,measured_at,2026-10-11T08:35:42.030742,,replace the estimates in cfo/assumptions.csv with these

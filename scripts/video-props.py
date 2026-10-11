@@ -4,7 +4,7 @@ import json, pathlib, sys
 root = pathlib.Path(__file__).resolve().parent.parent
 rep = json.load(open(sys.argv[1] if len(sys.argv) > 1 else root / "out" / "report.json"))
 sc, after = rep["scorecard"], rep.get("after") or {"succeeded": 0, "total": rep["scorecard"]["total"]}
-fixes = [f for f in rep.get("fixes", []) if f.get("status") in ("approved", "passed")]
+fixes = [f for f in rep.get("fixes", []) if f.get("status") == "approved"]
 rb = ra = None
 for f in fixes:
     if f.get("replay"):
