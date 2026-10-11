@@ -110,6 +110,7 @@ Then push `out/cost_report.csv` values into the cfo.ai "Measured" scenario throu
 - `docs/evidence/` — screenshots and JSON from the runs described in `STATUS.md`.
 
 ## 7. Known traps
+- **Entire hooks hang forever on macOS if `git` resolves to the old Intel build** (`/usr/local/bin/git`, git 2.33 under Rosetta, from the git-scm installer). Entire's post-commit hook spawns `git update-ref --stdin` and the two deadlock; no checkpoint is ever written and the next session's start hook blocks on the stale lock. Fix: put an arm64 git first on PATH, e.g. `ln -sf /Library/Developer/CommandLineTools/usr/bin/git ~/.local/bin/git` (or `brew install git`), and remove stale `.git/entire-*-locks/*.lock`. Verified 2026-10-11: with git 2.39 arm64 the hook completes instantly and `entire checkpoint list` shows the checkpoint.
 
 - The target must be started with `CRUSTDATA_BASE_URL` pointing at the chaos proxy, or faults and poisoned fixtures never reach it (Preflight checks `/health` and refuses otherwise).
 - If spans never show up in neatlogs, test `curl -v https://ingest.neatlogs.com/v1/traces`; on the original build machine a network filter intercepted that host.
