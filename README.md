@@ -12,6 +12,7 @@ Built for neatHack 2026 with neatlogs, Entire and cfo.ai.
 | Entire | Checkpoint `01M4N5WX9MEXD72YX851HPQR6K` on commit [`dedc414`](https://entire.io/gh/arnxv0/neathacks-project/commit/dedc4146f6668ef93ec8e4ba1050b13428fd9561) (`preflight db stats`, written by a Claude Code session; [screenshot](docs/evidence/entire-checkpoint-dedc414.jpg)). Fixer commits in the target carry `Entire-Checkpoint` trailers; entire-graph impact/search feeds every fixer brief. |
 | cfo.ai | Operating model built through the cfo.ai MCP from Claude Code, with a **Measured** scenario fed by the real run: [board summary, Main vs Measured](docs/evidence/cfo-board-main-vs-measured.jpg) · [build report](docs/evidence/cfo-model-build-20261011.md) |
 | Demo video | [Product demo, 2:26](docs/videos/preflight-product-demo.mp4) · [Explainer, 1:56](docs/videos/preflight-explainer.mp4) |
+| Live demo | [preflight.44-223-140-186.sslip.io](https://preflight.44-223-140-186.sslip.io) (login in the submission form). One Terraform-managed AWS host; two fixes from a cloud run are waiting for approval there. Details: [deploy/aws/README.md](deploy/aws/README.md) |
 | Recovery from failed actions | `recoveries[]` in the report: fixer retries after failed replays, 13 merge conflicts re-verified on main, a wall-clock stop resumed, [a regression caught and blamed to its commit](docs/evidence/regression-caught-blame-20261011.json) |
 
 Build log and submission checklist: [hackathon.md](hackathon.md). Everything that went wrong and what we did about it: [DECISIONS.md](DECISIONS.md).
