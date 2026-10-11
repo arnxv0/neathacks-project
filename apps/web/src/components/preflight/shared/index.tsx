@@ -154,8 +154,10 @@ const STATUS_TONE: Record<string, ToneName> = {
   merged: "pass", passed: "pass", approved: "pass", DONE: "pass", holding: "pass",
   failed: "fail", rejected: "fail", needs_human: "fail", STOPPED: "fail", regressed: "fail",
   await_approval: "pending", replaying: "pending", fixing: "pending", running: "pending", AWAIT_APPROVAL: "pending", FIX: "pending",
+  // targets (sandbox registry): cloning → cloned → onboarding → needs_review → ready | unsupported | error
+  ready: "pass", error: "fail", cloning: "pending", onboarding: "pending", needs_review: "pending", cloned: "trace", unsupported: "muted",
 };
-const ACTIVE = new Set(["replaying", "fixing", "running", "FIX", "ATTACK", "GRADE", "CLUSTER", "DIVERGE", "REGRESSION_SUITE", "VERIFY_AFTER", "REPORT", "BOOT_TARGET", "VERIFY_OWNERSHIP", "INIT"]);
+const ACTIVE = new Set(["replaying", "fixing", "running", "FIX", "ATTACK", "GRADE", "CLUSTER", "DIVERGE", "REGRESSION_SUITE", "VERIFY_AFTER", "REPORT", "BOOT_TARGET", "VERIFY_OWNERSHIP", "INIT", "cloning", "onboarding"]);
 export const statusTone = (status: string): ToneName => STATUS_TONE[status] ?? "muted";
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {

@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { cn } from "@/lib/utils";
-import type { PreflightEvent, Summary } from "@/lib/api/types";
+import type { PreflightEvent, SkippedAttack, Summary } from "@/lib/api/types";
 import { Check, Radio, Wrench } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CARD_LINK, EASE, EmptyState, Mono, PANEL, PANEL_LINK, Stagger, StaggerItem, StatusBadge, Tone } from "../shared";
+import { CARD_LINK, Disclosure, EASE, EmptyState, Mono, PANEL, PANEL_LINK, Stagger, StaggerItem, StatusBadge, Tone } from "../shared";
 import { ReplayDots } from "../fixes";
 import { timeAgo } from "@/lib/format";
 
@@ -178,4 +178,22 @@ export function useStageCounts(s: Summary | undefined, events: PreflightEvent[])
       VERIFY_AFTER: s.after ? `${s.after.succeeded}/${s.after.total} after` : after.length ? `${after.length} runs` : undefined, DONE: s.after ? `${s.scorecard.succeeded} → ${s.after.succeeded}` : undefined,
     } as Record<string, string | undefined>;
   }, [s, events.length]);
+}
+
+/** Attacks that were not run because the target does not have what they need (sandbox targets only): `manifest.attacks_skipped`. */
+export function SkippedAttacks({ skipped, attacks }: { skipped: SkippedAttack[]; attacks: Summary["attacks"] }) {
+  if (!skipped.length) return null;
+  return (
+    <Disclosure title={<span>Skipped attacks <span className="mono tabular-nums">({skipped.length})</span>: not applicable to this target</span>}>
+      <ul className="space-y-1.5">
+        {skipped.map((s) => (
+          <li key={s.attack_id} className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg border border-border/60 bg-card/60 px-3 py-2">
+            <Tone className="shrink-0">{s.attack_id}</Tone>
+            {attacks[s.attack_id]?.name && <span className="min-w-0 text-xs font-medium break-words text-foreground">{attacks[s.attack_id].name}</span>}
+            <span className="min-w-0 basis-full text-xs leading-relaxed break-words text-muted-foreground sm:basis-auto">{s.reason}</span>
+          </li>
+        ))}
+      </ul>
+    </Disclosure>
+  );
 }

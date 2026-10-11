@@ -4,7 +4,7 @@ import { useSummary } from "@/lib/api/hooks";
 import { useEventStream } from "@/lib/sse/useEventStream";
 import { api } from "@/lib/api/client";
 import type { PreflightEvent } from "@/lib/api/types";
-import { AttackProgress, FixerLanes, LiveFeed, StageTrack, eventsToRows, useStageCounts } from "@/components/preflight/pipeline";
+import { AttackProgress, FixerLanes, LiveFeed, SkippedAttacks, StageTrack, eventsToRows, useStageCounts } from "@/components/preflight/pipeline";
 import { DataView, FadeRise, PageHeader, PANEL } from "@/components/preflight/shared";
 import { PipelineSkeleton } from "@/components/preflight/shared/skeletons";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +30,7 @@ export default function Pipeline({ params }: { params: Promise<{ id: string }> }
             <div className="space-y-6">
               <Card className={PANEL}><CardContent className="p-4 sm:p-6"><StageTrack state={data.manifest.state} counts={counts} /></CardContent></Card>
               <FadeRise delay={0.05}><Card className={PANEL}><CardContent className="p-4"><AttackProgress s={data} /></CardContent></Card></FadeRise>
+              {Array.isArray(data.manifest.attacks_skipped) && data.manifest.attacks_skipped.length > 0 && <SkippedAttacks skipped={data.manifest.attacks_skipped} attacks={data.attacks} />}
               <div className="grid items-start gap-6 lg:grid-cols-5">
                 <section className="min-w-0 lg:col-span-2"><h2 className={SUB}>Fixer lanes</h2><FixerLanes s={data} id={id} /></section>
                 <section className="min-w-0 lg:col-span-3"><h2 className={SUB}>Live feed</h2><LiveFeed rows={rows} /></section>

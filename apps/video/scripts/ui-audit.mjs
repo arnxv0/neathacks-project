@@ -18,7 +18,13 @@ const WIDTHS = (process.env.WIDTHS ?? "1920x1080,1440x900,1280x720,1024x768,390x
 
 const summary = await fetch(`${API}/api/assessments/${A}`).then((r) => r.json());
 const runId = summary.runs?.[0]?.run_id;
+// Targets: the list always; one detail page only when a sandbox target exists (TARGET=<slug> picks one, else the first).
+const targets = await fetch(`${API}/api/targets`).then((r) => r.json()).then((d) => d.targets ?? []).catch(() => []);
+const sbx = targets.find((t) => t.kind === "sandbox" && (!process.env.TARGET || t.slug === process.env.TARGET));
+if (!sbx) console.log("no sandbox target: skipping target-detail");
 const pages = [
+  ["targets", "/targets"],
+  ...(sbx ? [["target-detail", `/targets/${sbx.slug}`]] : []),
   ["scorecard", `/a/${A}`],
   ["pipeline", `/a/${A}/pipeline`],
   ["clusters", `/a/${A}/clusters`],
