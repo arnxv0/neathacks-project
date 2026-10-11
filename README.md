@@ -47,7 +47,21 @@ Docker: `make up` runs the four services in Compose (fixers and Entire run on th
 
 ## Status
 
-`STATUS.md` is the full record: what exists, what was verified on real runs (3/3 → 0/3 on D1; 8/20 → 2/20 across the P0 catalog; regression caught and blamed), measured costs, sponsor-tool integration, open items and how to resume.
+**Full-mode run, 2026-10-11** (`20261011-001111-d070`, target reset to `v0-unfixed`, 20 attacks × 2–3 seeds, K=5 replays): **23/50 attack runs succeeded before → 0/50 after.** 15 failure clusters, 15 fixes (13 by Claude Code fixers, 2 finished by a human reviewer after merge conflicts), 15 permanent regression tests, 0 regressed. Every run has a neatlogs trace; the report, cost report and the SQLite store of the whole run are in `docs/evidence/`.
+
+`STATUS.md` is the full record: what exists, what was verified on real runs, measured costs, sponsor-tool integration, open items and how to resume.
+
+## Ledger: files + SQLite
+
+Every assessment is written twice: as files under `ledger/<assessment_id>/` (transcripts, diffs, briefs, events) and, write-through, into one SQLite store `ledger/preflight.sqlite` (`$PREFLIGHT_DB` to relocate it). The store has `assessments`, `runs`, `verdicts`, `steps`, `clusters`, `attempts`, `events`, `regressions` and two views, `scorecard` and `fixes`.
+
+```bash
+uv run preflight db sync                       # rebuild the store from the file ledger (idempotent)
+uv run preflight db query "SELECT attack_id, runs, attack_succeeded FROM scorecard WHERE kind='attack'"
+uv run preflight db export docs/evidence/preflight-<date>.sqlite   # one file to share
+curl "localhost:8200/api/db/query?sql=SELECT+cluster_id,replay_before,replay_after+FROM+fixes+WHERE+status='approved'"
+```
+Queries are read-only (single SELECT, read-only connection). The API is the access-control point: put it behind auth and nobody needs the ledger directory.
 
 ## Repo map
 

@@ -104,6 +104,7 @@ Then push `out/cost_report.csv` values into the cfo.ai "Measured" scenario throu
 ## 6. Where results live
 
 - `ledger/<assessment_id>/` — every run (`transcript.md`, `steps.jsonl`, `verdicts.json`), cluster (`divergence.md`, `graph.md`), fix (`brief.md`, `diff.patch`, `attempt.json`, `fixer.log`), `events.jsonl`, `report/`.
+- `ledger/preflight.sqlite` — the same data as a queryable SQLite store (`uv run preflight db query "SELECT * FROM fixes"`, `preflight db export <file>`, `GET /api/db/query?sql=`). Rebuild it any time with `uv run preflight db sync`.
 - `regressions/*.yaml` — one permanent test per approved fix.
 - `out/report.json`, `out/cost_report.csv` — the latest report and the cfo.ai inputs.
 - `docs/evidence/` — screenshots and JSON from the runs described in `STATUS.md`.

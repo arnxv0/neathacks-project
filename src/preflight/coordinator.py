@@ -419,6 +419,8 @@ class Coordinator:
         """All clusters resolved: regression suite, 'after' attack pass, report."""
         self.state("REGRESSION_SUITE")
         results = self.regress(emit=True)
+        from . import db
+        db.upsert_regressions(self.ledger.assessment_id, results)
         self.state("VERIFY_AFTER")
         after_runs = self._after_pass()
         rep = self.report({"regressions": results, "after": reportmod.scorecard(after_runs, self.specs)})

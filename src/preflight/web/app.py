@@ -196,3 +196,21 @@ def unstop():
 def regressions():
     from ..replay import regress
     return regress.load_all()
+
+# ---- SQLite store (read-only) ----
+@app.get("/api/db/schema")
+def db_schema():
+    from .. import db
+    return db.schema()
+
+@app.get("/api/db/query")
+def db_query(sql: str, limit: int = 500):
+    """Read-only SQL over the ledger store. Single SELECT only; the connection is opened read-only."""
+    from fastapi import HTTPException
+    from .. import db
+    try:
+        return {"rows": db.query(sql, limit=min(limit, 2000))}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(400, f"query failed: {e}")

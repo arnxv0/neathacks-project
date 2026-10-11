@@ -2,7 +2,7 @@
 from __future__ import annotations
 import datetime as dt, json, pathlib, uuid
 from typing import Any
-from . import config
+from . import config, db
 from .events import EventBus
 from .models import Cluster, FixAttempt, RunRecord, Step
 
@@ -15,11 +15,12 @@ class Ledger:
         self.root = (base or config.LEDGER_DIR) / assessment_id
         for d in ("runs", "clusters", "fixes", "report"):
             (self.root / d).mkdir(parents=True, exist_ok=True)
-        self.events = EventBus(self.root / "events.jsonl")
+        self.events = EventBus(self.root / "events.jsonl", on_emit=lambda ev: db.insert_event(assessment_id, ev))
 
     # ---- manifest ----
     def write_manifest(self, data: dict) -> None:
         self._write_json(self.root / "manifest.json", data)
+        db.upsert_assessment(self.assessment_id, data)
 
     def manifest(self) -> dict:
         p = self.root / "manifest.json"
@@ -43,6 +44,7 @@ class Ledger:
             self._write_json(d / "trace.json", trace)
         if run.verdicts:
             self._write_json(d / "verdicts.json", {k: v.model_dump() for k, v in run.verdicts.items()})
+        db.upsert_run(run, steps)
 
     def read_run(self, run_id: str) -> RunRecord:
         return RunRecord.model_validate_json((self.root / "runs" / run_id / "run.json").read_text())
@@ -65,6 +67,7 @@ class Ledger:
     def write_cluster(self, c: Cluster, divergence_md: str | None = None) -> None:
         d = self.root / "clusters" / c.cluster_id; d.mkdir(parents=True, exist_ok=True)
         self._write_json(d / "cluster.json", c.model_dump())
+        db.upsert_cluster(self.assessment_id, c)
         if divergence_md is not None:
             (d / "divergence.md").write_text(divergence_md)
 
@@ -83,6 +86,7 @@ class Ledger:
 
     def write_attempt(self, a: FixAttempt) -> None:
         self._write_json(self.fix_dir(a.cluster_id, a.n) / "attempt.json", a.model_dump())
+        db.upsert_attempt(self.assessment_id, a)
 
     def attempts(self, cluster_id: str) -> list[FixAttempt]:
         d = self.root / "fixes" / cluster_id

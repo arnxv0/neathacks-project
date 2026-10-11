@@ -103,3 +103,50 @@ def web(host: str = "127.0.0.1", port: int = 8200):
 
 if __name__ == "__main__":
     app()
+
+db_app = typer.Typer(no_args_is_help=True, help="SQLite ledger store (ledger/preflight.sqlite, or $PREFLIGHT_DB).")
+app.add_typer(db_app, name="db")
+
+@db_app.command("sync")
+def db_sync(assessment_id: str = typer.Argument(None, help="one assessment; default: every ledger directory")):
+    """Rebuild the SQLite store from the file ledger (idempotent)."""
+    from . import db
+    from .ledger import Ledger
+    out = [db.sync_assessment(Ledger(assessment_id))] if assessment_id else db.sync_all()
+    for o in out:
+        console.print(f"{o['assessment_id']}: {o['runs']} runs, {o['events']} events")
+    console.print(f"store: {db.path()}")
+
+@db_app.command("query")
+def db_query(sql: str, as_json: bool = typer.Option(False, "--json")):
+    """Run a read-only SELECT against the store."""
+    import json as _json
+    from rich.table import Table
+    from . import db
+    try:
+        rows = db.query(sql)
+    except ValueError as e:
+        console.print(f"[red]{e}"); raise typer.Exit(2)
+    if as_json:
+        print(_json.dumps(rows, indent=2, default=str)); return
+    if not rows:
+        console.print("(no rows)"); return
+    t = Table(*rows[0].keys())
+    for r in rows:
+        t.add_row(*[str(v)[:80] if v is not None else "" for v in r.values()])
+    console.print(t)
+
+@db_app.command("path")
+def db_path():
+    from . import db
+    print(db.path())
+
+@db_app.command("export")
+def db_export(dest: pathlib.Path):
+    """Copy the store to DEST as one self-contained SQLite file (checkpoints the WAL first)."""
+    import shutil
+    from . import db
+    with db.connect() as c:
+        c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    shutil.copy(db.path(), dest)
+    console.print(f"exported {db.path()} -> {dest} ({dest.stat().st_size // 1024} KB)")

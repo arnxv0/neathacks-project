@@ -4,8 +4,9 @@ import json, pathlib, threading, time
 from typing import Any, Iterator
 
 class EventBus:
-    def __init__(self, path: pathlib.Path):
+    def __init__(self, path: pathlib.Path, on_emit=None):
         self.path = path
+        self.on_emit = on_emit   # mirror into the SQLite store (preflight.db); never allowed to break an emit
         self._lock = threading.Lock()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._seq = sum(1 for _ in self.path.open()) if self.path.exists() else 0
@@ -16,6 +17,11 @@ class EventBus:
             ev = {"seq": self._seq, "ts": time.time(), "type": type, **payload}
             with self.path.open("a") as f:
                 f.write(json.dumps(ev, default=str) + "\n")
+        if self.on_emit is not None:
+            try:
+                self.on_emit(ev)
+            except Exception:
+                pass
         return ev
 
 def read_events(path: pathlib.Path, since: int = 0) -> list[dict]:

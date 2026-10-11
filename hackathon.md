@@ -13,6 +13,10 @@
 
 ## Build log
 
+### Sun Oct 11, 00:11–01:35 PT — the clean full-mode run
+
+Target reset to `v0-unfixed`; `preflight run --mode full` (20 attacks, 50 seeds, K=5). Before **23/50**, after **0/50**, 15 clusters, 15 regression suites, 0 regressed. Real neatlogs traces for every run (network filter gone). Along the way: Xcode update broke `make` (3 wasted fixer attempts, shimmed, then removed the dependency: target now boots with `python -m app`); 1500 s wall clock hit once → `preflight resume`; 13 merge conflicts handled by replaying on main; C3 and E1 finished by a human reviewer merge through the request-changes flow. Evidence in `docs/evidence/*-full-20261011.*` and `preflight-20261011.sqlite`. Target vendored into `targets/` (one repo). SQLite ledger store added.
+
 ### 2026-10-10 (Sat)
 - Verified every sponsor API from this machine. Gotchas recorded in `DECISIONS.md`: neatlogs public reads need a service-account token, Crustdata legacy endpoints are closed, Bedrock needs the Anthropic use-case form, neatlogs SDK needs Python < 3.14.
 - Built the target (AcmeSales Copilot) with realistic seeded weaknesses; first real chat through Crustdata + Haiku on LiteLLM worked.
