@@ -110,20 +110,36 @@ class ClaudeCodeFixer:
         return self.wait(h, timeout_s)
 
 
+_STALL_PATTERNS = ("entire hooks claude-code stop", "entire hooks claude-code session-start", "entire hooks claude-code session-end",
+                   "entire hooks git post-commit", "git update-ref --stdin")
+
+def _etime_seconds(etime: str) -> int:
+    """Parse BSD/macOS `ps -o etime` ([[dd-]hh:]mm:ss); macOS has no `etimes`."""
+    days = 0
+    if "-" in etime:
+        d, etime = etime.split("-", 1)
+        days = int(d)
+    parts = [int(x) for x in etime.split(":")]
+    while len(parts) < 3:
+        parts.insert(0, 0)
+    return days * 86400 + parts[0] * 3600 + parts[1] * 60 + parts[2]
+
 def _reap_stalled_entire_hooks(max_age_s: int = 90) -> None:
-    """Entire's Claude Code stop hook can block for ~10 minutes during non-interactive sessions (see DECISIONS.md).
-    The session transcript is already saved by then; killing the stalled hook lets `claude -p` exit."""
+    """Entire's hooks can block indefinitely around non-interactive sessions (see DECISIONS.md): the Claude Code stop hook
+    (~10 min), the git post-commit hook (`git update-ref --stdin` never returns, which then blocks the next session's
+    session-start hook on Entire's ref locks). The transcript/commit is already saved by then; killing the stalled hook lets
+    `claude -p` exit and the next fixer start. Returns nothing; failures are ignored."""
     try:
-        out = subprocess.run(["ps", "-ax", "-o", "pid=,etimes=,command="], capture_output=True, text=True).stdout
+        out = subprocess.run(["ps", "-ax", "-o", "pid=,etime=,command="], capture_output=True, text=True).stdout
     except Exception:
         return
     for line in out.splitlines():
         parts = line.split(None, 2)
-        if len(parts) < 3 or "entire hooks claude-code stop" not in parts[2]:
+        if len(parts) < 3 or not any(pat in parts[2] for pat in _STALL_PATTERNS):
             continue
         try:
-            if int(parts[1]) > max_age_s:
-                os.kill(int(parts[0]), 15)
+            if _etime_seconds(parts[1]) > max_age_s:
+                os.kill(int(parts[0]), 9)
         except (ValueError, ProcessLookupError, PermissionError):
             pass
 
