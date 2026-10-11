@@ -20,3 +20,6 @@ Session.vim
 apps/video/out/
 apps/video/node_modules/
 social/
+ledger-live/
+regressions-live/
+apps/video/public/live/

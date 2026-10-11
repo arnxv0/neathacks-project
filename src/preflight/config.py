@@ -42,7 +42,7 @@ LEDGER_DIR = pathlib.Path(os.getenv("PREFLIGHT_LEDGER_DIR", ROOT / "ledger"))
 OUT_DIR = ROOT / "out"
 ATTACKS_DIR = ROOT / "attacks"
 FIXTURES_DIR = ROOT / "fixtures"
-REGRESSIONS_DIR = ROOT / "regressions"
+REGRESSIONS_DIR = pathlib.Path(os.getenv("PREFLIGHT_REGRESSIONS_DIR", ROOT / "regressions"))
 
 def env(name: str, default: str = "") -> str:
     return os.getenv(name, default)
