@@ -19,6 +19,8 @@ JOBS: dict[str, subprocess.Popen] = {}
 
 def _cli(*args: str, log: pathlib.Path | None = None) -> subprocess.Popen:
     env = clean_env()
+    if log:
+        pathlib.Path(log).parent.mkdir(parents=True, exist_ok=True)   # a fresh clone has no ledger/ yet
     out = open(log, "ab") if log else subprocess.DEVNULL
     return subprocess.Popen([sys.executable, "-m", "preflight.cli", *args], cwd=config.ROOT, env=env, stdout=out, stderr=subprocess.STDOUT)
 
