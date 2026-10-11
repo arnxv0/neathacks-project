@@ -1,5 +1,6 @@
 "use client";
 import { useMemo } from "react";
+import { headlineAttempt } from "../fixes";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -142,7 +143,7 @@ export function FixerLanes({ s, id }: { s: Summary; id: string }) {
   return (
     <Stagger className="grid gap-3">
       {lanes.map((c) => {
-        const a = c.attempts[c.attempts.length - 1];
+        const a = headlineAttempt(c.attempts);
         const running = c.status === "fixing" || a?.status === "running" || a?.status === "replaying";
         return (
           <StaggerItem key={c.cluster_id}>
@@ -174,7 +175,7 @@ export function useStageCounts(s: Summary | undefined, events: PreflightEvent[])
       ATTACK: `${attack.length} runs`, GRADE: `${attack.filter((r) => r.failed).length} succeeded`, CLUSTER: `${s.clusters.length} clusters`,
       DIVERGE: `${s.clusters.filter((c) => c.divergence).length} divergences`, FIX: `${fixes} attempts · ${replays.length} replays`,
       AWAIT_APPROVAL: `${s.clusters.filter((c) => c.status === "merged").length} merged`, REGRESSION_SUITE: `${s.regressions.length} suites`,
-      VERIFY_AFTER: after.length ? `${after.filter((r) => r.failed).length}/${after.length} after` : undefined, DONE: s.after ? `${s.scorecard.succeeded} → ${s.after.succeeded}` : undefined,
+      VERIFY_AFTER: s.after ? `${s.after.succeeded}/${s.after.total} after` : after.length ? `${after.length} runs` : undefined, DONE: s.after ? `${s.scorecard.succeeded} → ${s.after.succeeded}` : undefined,
     } as Record<string, string | undefined>;
   }, [s, events.length]);
 }
