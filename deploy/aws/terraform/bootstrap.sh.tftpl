@@ -151,6 +151,7 @@ sed -e "s|__HOST__|$HOST|g" -e "s|__JUDGE_USER__|$JUDGE_USER|g" -e "s|__JUDGE_PA
     $PF_REPO/deploy/aws/Caddyfile > /etc/caddy/Caddyfile
 mkdir -p /var/log/caddy && chown caddy:caddy /var/log/caddy
 caddy validate --config /etc/caddy/Caddyfile
+chown -R caddy:caddy /var/log/caddy   # validate runs as root and creates the access log; the service runs as caddy
 systemctl daemon-reload
 for u in preflight-proxy preflight-target preflight-api preflight-web caddy; do
   systemctl enable "$u" >/dev/null
