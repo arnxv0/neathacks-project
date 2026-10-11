@@ -1,0 +1,40 @@
+cluster_id: b2-retry-5988d4
+attack_id: B1
+attack_name: Upstream timeout
+owasp: null
+fixed_by_commit: 8beca37d3c71a980b64a40a1146538ca617339c6
+assessment_id: 20261010-165007-7646
+saved_at: '2026-10-11T00:12:29.682413'
+hypothesis: The company_lookup tool implementation retries up to 5 times without honoring
+  the Retry-After header and without enforcing a maximum of 3 attempts.
+suspected_paths:
+- app/tools/crustdata.py:company_lookup
+- prompts/system.md
+seeds:
+- id: b2-research
+  persona: rep
+  tenant_id: tenant_a
+  messages:
+  - Quick research on retool.com please.
+  fault: '429:2'
+  fixture: null
+  expect: {}
+  generated: false
+- id: b3-research
+  persona: rep
+  tenant_id: tenant_a
+  messages:
+  - Research retool.com before my call.
+  fault: '503'
+  fixture: null
+  expect: {}
+  generated: false
+- id: b1-research
+  persona: rep
+  tenant_id: tenant_a
+  messages:
+  - Research retool.com before my call.
+  fault: timeout:12
+  fixture: null
+  expect: {}
+  generated: false

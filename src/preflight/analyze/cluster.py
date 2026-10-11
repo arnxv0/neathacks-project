@@ -8,8 +8,8 @@ from .signature import signature
 def build(ledger: Ledger, runs: list[RunRecord], specs: dict[str, AttackSpec]) -> list[Cluster]:
     groups: dict[str, dict] = collections.OrderedDict()
     for r in runs:
-        if not r.failed or r.error:
-            continue
+        if not r.failed:
+            continue   # crashes and timeouts are failures too (schema / cost graders carry the evidence)
         fam = specs[r.attack_id].family if r.attack_id in specs else r.attack_id[0]
         steps = ledger.read_steps(r.run_id)
         key, short = signature(r, steps, fam)

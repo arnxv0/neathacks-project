@@ -16,5 +16,6 @@ def signature(run: RunRecord, steps: list[Step], family: str) -> tuple[str, str]
     failing = sorted(g for g, v in run.verdicts.items() if not v.passed)
     first = min([v.violation_step for v in run.verdicts.values() if not v.passed and v.violation_step is not None], default=None)
     seq = tool_sequence(steps, first)
-    key = f"{family}|{','.join(failing)}|{'>'.join(seq)}"
+    err = f"|error:{run.error.split(':')[0].strip()}" if run.error else ""
+    key = f"{family}|{','.join(failing)}|{'>'.join(seq)}{err}"
     return key, hashlib.sha1(key.encode()).hexdigest()[:6]

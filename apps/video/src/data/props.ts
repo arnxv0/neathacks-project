@@ -6,14 +6,14 @@ export type ExplainerProps = {
 };
 export const defaultProps: ExplainerProps = {
   "before": 8,
-  "after": 0,
+  "after": 2,
   "total": 20,
   "clusters": 3,
-  "fixes": 0,
+  "fixes": 3,
   "replayBefore": "0/3",
   "replayAfter": "6/6",
   "costPerRun": 0.00507,
-  "costPerAssessment": 0.1149,
+  "costPerAssessment": 8.1908,
   "repoUrl": "github.com/arnxv0/neathacks-project",
   "regressionCommit": "a1b2c3d"
 };
