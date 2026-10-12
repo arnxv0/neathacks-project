@@ -23,7 +23,7 @@ export default function Pipeline({ params }: { params: Promise<{ id: string }> }
   return (
     <DataView query={query} what="the pipeline" skeleton={<PipelineSkeleton />}>
       {(data) => {
-        const rows = eventsToRows(events, id, data.attacks);
+        const rows = eventsToRows(events, id, data.attacks, new Set(data.clusters.filter((c) => c.resolution === "closed_by_main").map((c) => c.cluster_id)));
         return (
           <div>
             <PageHeader title="Pipeline" subtitle="every stage of the assessment, live from the event ledger" />

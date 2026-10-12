@@ -21,6 +21,17 @@ def _mtime(root: pathlib.Path) -> float:
         latest = max(latest, ev.stat().st_mtime)
     return latest
 
+NOT_MERGED_NOTE = "[not merged:"   # written into the attempt summary by coordinator.approve() before `merged` was a field
+
+def resolve(cluster: dict) -> None:
+    """Say how a closed cluster was closed. `merged`: its approved commit is in main. `closed_by_main`: its branch
+    conflicted, was not merged, and main (with the earlier approved fixes) already passed the same replay."""
+    for a in cluster["attempts"]:
+        if a["status"] == "approved" and a.get("merged") is None:      # ledgers written before the field existed
+            a["merged"] = NOT_MERGED_NOTE not in (a.get("summary") or "")
+    approved = next((a for a in cluster["attempts"] if a["status"] == "approved"), None)
+    cluster["resolution"] = None if cluster["status"] != "merged" or not approved else ("merged" if approved["merged"] else "closed_by_main")
+
 def specs() -> dict:
     return {s.id: s for s in catalog.load_all()}
 
@@ -60,6 +71,7 @@ def summary(aid: str) -> dict:
         d["attempts"] = [a.model_dump() for a in led.attempts(c.cluster_id)]
         d["attack_name"] = sp[c.attack_ids[0]].name if c.attack_ids[0] in sp else c.attack_ids[0]
         d["owasp"] = sp[c.attack_ids[0]].owasp if c.attack_ids[0] in sp else None
+        resolve(d)
         clusters.append(d)
     reg_path = root / "report" / "regressions.json"
     regressions = json.loads(reg_path.read_text()) if reg_path.exists() else []
@@ -98,6 +110,7 @@ def cluster_detail(aid: str, cluster_id: str) -> dict:
         ad["brief"] = (fdir / "brief.md").read_text() if (fdir / "brief.md").exists() else ""
         ad["replay_runs"] = [led.read_run(r).model_dump(exclude={"tool_calls"}) for r in (a.replay.run_ids if a.replay else []) if (led.root / "runs" / r / "run.json").exists()]
         out["attempts"].append(ad)
+    resolve(out)
     fail_steps = [s.model_dump() for s in led.read_steps(c.run_ids[0])] if c.run_ids else []
     pass_steps = [s.model_dump() for s in led.read_steps(c.divergence.run_pass)] if c.divergence and c.divergence.run_pass else []
     out["fail_steps"], out["pass_steps"] = fail_steps, pass_steps

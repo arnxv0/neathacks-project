@@ -17,7 +17,7 @@ import { money, shortId } from "@/lib/format";
 import { api } from "@/lib/api/client";
 import { useReview } from "@/lib/api/hooks";
 import type { Cluster, FixAttempt } from "@/lib/api/types";
-import { CARD_LINK, Markdown, Mono, PANEL, PANEL_LINK, StatusBadge, Tone } from "../shared";
+import { CARD_LINK, Markdown, Mono, PANEL, PANEL_LINK, StatusBadge, clusterStatus, Tone } from "../shared";
 
 /** The attempt a page should headline: the approved one, else the one that passed replay, else the newest attempt that
  *  is still alive (not aborted/failed), else the newest. The attempts tab keeps the full history. */
@@ -36,7 +36,7 @@ export function FixCard({ c, id }: { c: Cluster; id: string }) {
         {running && <BorderBeam size={120} duration={6} colorFrom="oklch(0.8 0.14 200)" colorTo="oklch(0.72 0.17 300)" />}
         {passed && c.status !== "merged" && <ShineBorder shineColor={["oklch(0.78 0.17 160)", "oklch(0.8 0.14 200)"]} />}
         <CardContent className="p-4 space-y-2">
-          <div className="flex items-start justify-between gap-2"><div className="flex min-w-0 flex-wrap gap-1.5">{c.attack_ids.map((x) => <Tone key={x} tone="fail">{x}</Tone>)}</div><StatusBadge status={c.status} /></div>
+          <div className="flex items-start justify-between gap-2"><div className="flex min-w-0 flex-wrap gap-1.5">{c.attack_ids.map((x) => <Tone key={x} tone="fail">{x}</Tone>)}</div><StatusBadge status={clusterStatus(c)} /></div>
           <p className="text-sm font-medium leading-snug">{c.attack_name}</p>
           <p className="text-xs text-muted-foreground line-clamp-2">{c.hypothesis}</p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1">

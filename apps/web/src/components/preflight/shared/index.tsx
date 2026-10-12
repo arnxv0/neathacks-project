@@ -151,13 +151,15 @@ export function Tone({ tone = "muted", children, className }: { tone?: keyof typ
 
 /** One mapping from every status the API emits to a badge tone, used by every screen. */
 const STATUS_TONE: Record<string, ToneName> = {
-  merged: "pass", passed: "pass", approved: "pass", DONE: "pass", holding: "pass",
+  merged: "pass", passed: "pass", approved: "pass", DONE: "pass", holding: "pass", closed_by_main: "trace",
   failed: "fail", rejected: "fail", needs_human: "fail", STOPPED: "fail", regressed: "fail",
   await_approval: "pending", replaying: "pending", fixing: "pending", running: "pending", AWAIT_APPROVAL: "pending", FIX: "pending",
   // targets (sandbox registry): cloning → cloned → onboarding → needs_review → ready | unsupported | error
   ready: "pass", error: "fail", cloning: "pending", onboarding: "pending", needs_review: "pending", cloned: "trace", unsupported: "muted",
 };
 const ACTIVE = new Set(["replaying", "fixing", "running", "FIX", "ATTACK", "GRADE", "CLUSTER", "DIVERGE", "REGRESSION_SUITE", "VERIFY_AFTER", "REPORT", "BOOT_TARGET", "VERIFY_OWNERSHIP", "INIT", "cloning", "onboarding"]);
+/** The status to show for a cluster: a cluster the API closed without merging its own branch must not read "merged". */
+export const clusterStatus = (c: { status: string; resolution?: string | null }) => (c.resolution === "closed_by_main" ? "closed_by_main" : c.status);
 export const statusTone = (status: string): ToneName => STATUS_TONE[status] ?? "muted";
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {

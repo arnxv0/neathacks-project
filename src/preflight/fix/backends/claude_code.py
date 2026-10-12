@@ -43,6 +43,14 @@ class ClaudeCodeFixer:
         venv = pathlib.Path(target_repo) / ".venv"
         if venv.exists() and not (worktree / ".venv").exists():
             (worktree / ".venv").symlink_to(venv)
+            # the target's `.venv/` ignore rule matches a directory, not this symlink: keep it out of the fix commit
+            common = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=worktree, capture_output=True, text=True).stdout.strip()
+            if common:
+                ex = (pathlib.Path(worktree) / common if not pathlib.Path(common).is_absolute() else pathlib.Path(common)) / "info" / "exclude"
+                ex.parent.mkdir(parents=True, exist_ok=True)
+                if "/.venv\n" not in (ex.read_text() if ex.exists() else ""):
+                    with ex.open("a") as f:
+                        f.write("\n/.venv\n")
         h = FixHandle(cluster_id=brief_path.parent.name, branch=branch, worktree=worktree, log_path=pathlib.Path(log_path))
         prompt = f"Read the fix brief at {brief_path} and carry it out in this repository (the current working directory). Follow its rules exactly."
         self._launch(h, prompt, resume=None)

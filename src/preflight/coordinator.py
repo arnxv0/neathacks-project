@@ -380,17 +380,18 @@ class Coordinator:
             if rep.passed == rep.total:
                 merge_sha = process.target_version(comp)
                 a.summary = (a.summary or "") + f"\n[not merged: conflicted with an earlier approved fix; main already passes replay {rep.after}]"
-                a.replay = rep
+                a.replay = rep; a.merged = False
             else:
                 cluster.status = "needs_human"; self.ledger.write_cluster(cluster)
                 self.emit("cluster.needs_human", cluster_id=cluster_id, reason="merge conflict and main still fails replay")
                 raise
+        a.merged = a.merged is not False; a.merge_commit = merge_sha
         a.status = "approved"; self.ledger.write_attempt(a)
         cluster.status = "merged"; self.ledger.write_cluster(cluster)
         spec = self.specs[cluster.attack_ids[0]]
         seeds = [self.seed_of[r][1] for r in cluster.run_ids if r in self.seed_of]
         reg = regressmod.save(cluster, spec, seeds, a.commit or merge_sha, self.ledger.assessment_id)
-        self.emit("merged", cluster_id=cluster_id, commit=a.commit, merge_commit=merge_sha, regression_file=str(reg))
+        self.emit("merged", cluster_id=cluster_id, commit=a.commit, merge_commit=merge_sha, merged=a.merged, regression_file=str(reg))
         console.print(f"[green]merged[/] {a.branch} -> main ({merge_sha[:8]}); regression saved {reg.name}")
         dispatcher.remove_worktree(comp.repo_path, cluster_id)
         if self.sandbox:

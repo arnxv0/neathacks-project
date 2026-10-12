@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import type { PreflightEvent, SkippedAttack, Summary } from "@/lib/api/types";
 import { Check, Radio, Wrench } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CARD_LINK, Disclosure, EASE, EmptyState, Mono, PANEL, PANEL_LINK, Stagger, StaggerItem, StatusBadge, Tone } from "../shared";
+import { CARD_LINK, Disclosure, EASE, EmptyState, Mono, PANEL, PANEL_LINK, Stagger, StaggerItem, StatusBadge, clusterStatus, Tone } from "../shared";
 import { ReplayDots } from "../fixes";
 import { timeAgo } from "@/lib/format";
 
@@ -64,7 +64,8 @@ export function StageTrack({ state, counts }: { state: string; counts: Record<st
 
 type Row = { key: string; ts: number; kind: "run" | "cluster" | "fix" | "replay" | "state" | "recovery" | "merged" | "regression"; tone: "pass" | "fail" | "pending" | "trace" | "checkpoint" | "muted"; text: string; sub?: string; href?: string };
 
-export function eventsToRows(events: PreflightEvent[], id: string, attacks: Summary["attacks"]): Row[] {
+/** `closedByMain`: clusters whose branch was not merged (the API's `resolution`); their "merged" event must not claim a merge. */
+export function eventsToRows(events: PreflightEvent[], id: string, attacks: Summary["attacks"], closedByMain?: Set<string>): Row[] {
   const rows: Row[] = [];
   for (const e of events) {
     const base = `/a/${id}`;
@@ -78,7 +79,7 @@ export function eventsToRows(events: PreflightEvent[], id: string, attacks: Summ
       case "fix.attempt.done": rows.push({ key: `fd-${e.seq}`, ts: e.ts, kind: "fix", tone: e.ok ? "checkpoint" : "fail", text: e.ok ? `fix committed ${String(e.commit).slice(0, 8)} · ${e.cluster_id}` : `fixer failed · ${e.cluster_id}`, sub: e.ok ? `tests ${e.tests_green ? "green" : "red"}${e.checkpoint ? ` · checkpoint ${e.checkpoint}` : ""}` : String(e.error ?? ""), href: `${base}/fixes/${e.cluster_id}` }); break;
       case "replay.done": rows.push({ key: `r-${e.seq}`, ts: e.ts, kind: "replay", tone: e.before !== e.after && String(e.after).split("/")[0] === String(e.after).split("/")[1] ? "pass" : "pending", text: `replay ${e.before} → ${e.after} · ${e.cluster_id}`, href: `${base}/fixes/${e.cluster_id}` }); break;
       case "approval.needed": rows.push({ key: `a-${e.seq}`, ts: e.ts, kind: "fix", tone: "pending", text: `ready for review · ${e.cluster_id}`, sub: "approve, request changes, edit or reject", href: `${base}/fixes/${e.cluster_id}` }); break;
-      case "merged": rows.push({ key: `m-${e.seq}`, ts: e.ts, kind: "merged", tone: "pass", text: `merged into main · ${e.cluster_id}`, sub: `regression test saved`, href: `${base}/regressions` }); break;
+      case "merged": rows.push({ key: `m-${e.seq}`, ts: e.ts, kind: "merged", tone: "pass", text: e.merged === false || (e.merged === undefined && closedByMain?.has(e.cluster_id as string)) ? `closed by main, branch not merged · ${e.cluster_id}` : `merged into main · ${e.cluster_id}`, sub: `regression test saved`, href: `${base}/regressions` }); break;
       case "regression.result": rows.push({ key: `reg-${e.seq}`, ts: e.ts, kind: "regression", tone: e.passed ? "pass" : "fail", text: `${e.passed ? "holding" : "REGRESSED"} · ${e.cluster_id}`, href: `${base}/regressions` }); break;
       case "recovery": rows.push({ key: `rec-${e.seq}`, ts: e.ts, kind: "recovery", tone: "pending", text: `recovered: ${e.kind}`, sub: e.detail }); break;
       case "state.changed": rows.push({ key: `s-${e.seq}`, ts: e.ts, kind: "state", tone: "muted", text: `→ ${e.state}` }); break;
@@ -151,7 +152,7 @@ export function FixerLanes({ s, id }: { s: Summary; id: string }) {
               <Card className={cn(PANEL, PANEL_LINK, "relative h-full overflow-hidden")}>
                 {running && <BorderBeam size={100} duration={5} colorFrom="oklch(0.8 0.14 200)" colorTo="oklch(0.72 0.17 300)" />}
                 <CardContent className="space-y-1.5 p-3">
-                  <div className="flex items-start justify-between gap-2"><div className="flex min-w-0 flex-wrap gap-1">{c.attack_ids.map((x) => <Tone key={x} tone="fail">{x}</Tone>)}</div><StatusBadge status={c.status} /></div>
+                  <div className="flex items-start justify-between gap-2"><div className="flex min-w-0 flex-wrap gap-1">{c.attack_ids.map((x) => <Tone key={x} tone="fail">{x}</Tone>)}</div><StatusBadge status={clusterStatus(c)} /></div>
                   <p className="truncate text-xs font-medium">{c.attack_name}</p>
                   {a?.replay ? <ReplayDots replay={a.replay} compact /> : <Mono className="block truncate">{a ? `attempt ${a.n} · ${a.status}` : "waiting for fixer"}</Mono>}
                 </CardContent>
@@ -174,7 +175,7 @@ export function useStageCounts(s: Summary | undefined, events: PreflightEvent[])
     return {
       ATTACK: `${attack.length} runs`, GRADE: `${attack.filter((r) => r.failed).length} succeeded`, CLUSTER: `${s.clusters.length} clusters`,
       DIVERGE: `${s.clusters.filter((c) => c.divergence).length} divergences`, FIX: `${fixes} attempts · ${replays.length} replays`,
-      AWAIT_APPROVAL: `${s.clusters.filter((c) => c.status === "merged").length} merged`, REGRESSION_SUITE: `${s.regressions.length} suites`,
+      AWAIT_APPROVAL: `${s.clusters.filter((c) => c.resolution === "merged").length} merged${s.clusters.some((c) => c.resolution === "closed_by_main") ? ` · ${s.clusters.filter((c) => c.resolution === "closed_by_main").length} closed by main` : ""}`, REGRESSION_SUITE: `${s.regressions.length} suites`,
       VERIFY_AFTER: s.after ? `${s.after.succeeded}/${s.after.total} after` : after.length ? `${after.length} runs` : undefined, DONE: s.after ? `${s.scorecard.succeeded} → ${s.after.succeeded}` : undefined,
     } as Record<string, string | undefined>;
   }, [s, events.length]);

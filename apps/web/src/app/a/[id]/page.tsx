@@ -20,7 +20,7 @@ export default function Overview({ params }: { params: Promise<{ id: string }> }
           <div className="space-y-8">
             <h1 className="sr-only">Scorecard</h1>
             <ScorecardHero sc={data.scorecard} after={data.after} running={running} />
-            <section><SectionHeader title="Attack matrix" subtitle="P0 catalog, mapped to the OWASP Top 10 for LLM applications" /><FamilyGrid sc={data.scorecard} attacks={data.attacks} runs={data.runs} id={id} after={data.after} /></section>
+            <section><SectionHeader title="Attack matrix" subtitle={`${Object.keys(data.scorecard.by_attack).length} of the ${Object.keys(data.attacks).length} attacks in the catalog ran, ${data.scorecard.total} seeds · mapped to the OWASP Top 10 for LLM applications`} /><FamilyGrid sc={data.scorecard} attacks={data.attacks} runs={data.runs} id={id} after={data.after} /></section>
             <section>
               <SectionHeader title="Failure clusters" subtitle="failed runs grouped by root cause, each with its first divergence step" />
               {data.clusters.length ? <ClusterGrid clusters={data.clusters} id={id} />

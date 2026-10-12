@@ -15,12 +15,14 @@ export type Replay = { before: string; after: string; passed: number; total: num
 export type FixAttempt = {
   cluster_id: string; n: number; author: "fixer" | "human"; review_comment: string | null; backend: string; branch: string; commit: string | null;
   entire_checkpoint_id: string | null; checkpoint_summary: string | null; replay: Replay | null; tests_green: boolean | null; cost_usd: number;
-  status: string; fixer_session_id: string | null; summary: string; diff?: string; checkpoint_md?: string; brief?: string; replay_runs?: Run[];
+  status: string; fixer_session_id: string | null; summary: string; merged?: boolean | null; merge_commit?: string | null; diff?: string; checkpoint_md?: string; brief?: string; replay_runs?: Run[];
 };
 export type Cluster = {
   cluster_id: string; signature: string; family: string; attack_ids: string[]; run_ids: string[]; failing_graders: string[];
   divergence: Divergence | null; hypothesis: string; suspected_paths: string[]; component: string; status: string;
   attempts: FixAttempt[]; attack_name?: string; owasp?: string | null;
+  /** How a closed cluster was closed: its own commit merged, or main already passed after its branch conflicted (not merged). */
+  resolution?: "merged" | "closed_by_main" | null;
 };
 export type ClusterDetail = Cluster & { divergence_md: string; graph_md?: string; fail_steps: Step[]; pass_steps: Step[]; attack: { id: string; name: string; owasp: string | null; safe_behavior: string; description: string } | null };
 export type AttackScore = { attack_id: string; family: string; owasp: string | null; runs: number; succeeded: number; run_ids: string[]; failing_graders: Record<string, number> };

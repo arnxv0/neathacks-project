@@ -120,6 +120,9 @@ class FixAttempt(BaseModel):
     fixer_session_id: str | None = None
     log_path: str | None = None
     summary: str = ""
+    merged: bool | None = None            # set at approval: True = this commit was merged into main; False = the branch conflicted and
+                                          # main already passed the replay, so the cluster is closed WITHOUT this diff
+    merge_commit: str | None = None       # the merge commit (merged) or the main commit the replay was re-run on (not merged)
 
 class Finding(BaseModel):
     signature: str

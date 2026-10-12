@@ -6,7 +6,7 @@ import { Button as MovingButton } from "@/components/ui/moving-border";
 import { TracingBeam } from "@/components/ui/tracing-beam";
 import { cn } from "@/lib/utils";
 import type { Cluster, ClusterDetail, Step } from "@/lib/api/types";
-import { CARD_LINK, Disclosure, Label, Markdown, Mono, PANEL, PANEL_LINK, Stagger, StaggerItem, StatusBadge, Tone, Truncate } from "../shared";
+import { CARD_LINK, Disclosure, Label, Markdown, Mono, PANEL, PANEL_LINK, Stagger, StaggerItem, StatusBadge, clusterStatus, Tone, Truncate } from "../shared";
 
 export function ClusterCard({ c, id }: { c: Cluster; id: string }) {
   const last = c.attempts[c.attempts.length - 1];
@@ -16,7 +16,7 @@ export function ClusterCard({ c, id }: { c: Cluster; id: string }) {
         <CardContent className="flex h-full flex-col gap-2 p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">{c.attack_ids.map((a) => <Tone key={a} tone="fail">{a}</Tone>)}{c.owasp && <Mono>{c.owasp}</Mono>}</div>
-            <StatusBadge status={c.status} />
+            <StatusBadge status={clusterStatus(c)} />
           </div>
           <p className="text-sm leading-snug font-medium break-words">{c.attack_name}</p>
           <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">{c.hypothesis || "analyzing…"}</p>

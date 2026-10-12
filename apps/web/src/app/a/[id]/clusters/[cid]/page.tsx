@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, ListTree } from "lucide-react";
 import { useCluster } from "@/lib/api/hooks";
 import { DivergenceMarkdown, DivergenceView, HypothesisCard } from "@/components/preflight/clusters";
-import { DataView, EmptyState, FadeRise, PageHeader, StatusBadge, Tone, Truncate } from "@/components/preflight/shared";
+import { DataView, EmptyState, FadeRise, PageHeader, StatusBadge, clusterStatus, Tone, Truncate } from "@/components/preflight/shared";
 import { ClusterDetailSkeleton } from "@/components/preflight/shared/skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export default function ClusterPage({ params }: { params: Promise<{ id: string; 
           <PageHeader title={c.attack?.name ?? cid} subtitle={c.attack?.description}
             crumbs={[{ label: "Scorecard", href: `/a/${id}` }, { label: "Clusters", href: `/a/${id}/clusters` }, { label: cid }]}
             right={<Button size="sm" nativeButton={false} render={<Link href={`/a/${id}/fixes/${cid}`} />}>Open fix<ArrowRight /></Button>}
-            meta={<><StatusBadge status={c.status} />{c.attack_ids.map((a) => <Tone key={a} tone="fail">{a}</Tone>)}{c.owasp && <Tone tone="muted">{c.owasp}</Tone>}<Truncate text={cid} className="mono text-xs text-muted-foreground" /></>} />
+            meta={<><StatusBadge status={clusterStatus(c)} />{c.attack_ids.map((a) => <Tone key={a} tone="fail">{a}</Tone>)}{c.owasp && <Tone tone="muted">{c.owasp}</Tone>}<Truncate text={cid} className="mono text-xs text-muted-foreground" /></>} />
           <div className="space-y-6">
             <HypothesisCard c={c} />
             <Tabs defaultValue="divergence">
