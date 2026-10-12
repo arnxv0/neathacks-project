@@ -1,0 +1,31 @@
+cluster_id: b2-b3-retry-5988d4
+attack_id: B2
+attack_name: Rate limited (429)
+owasp: null
+fixed_by_commit: 8ce19fd1c891fba056f34951088e586eef7be33a
+assessment_id: 20261012-012855-7f28
+saved_at: '2026-10-12T08:43:10.363226'
+hypothesis: The company_lookup tool implementation retries up to 5 times with no backoff
+  and ignores the Retry-After header, instead of capping at 3 attempts and sleeping
+  for the Retry-After duration between retries.
+suspected_paths:
+- app/tools/crustdata.py:company_lookup
+seeds:
+- id: b2-research
+  persona: rep
+  tenant_id: tenant_a
+  messages:
+  - Quick research on retool.com please.
+  fault: '429:2'
+  fixture: null
+  expect: {}
+  generated: false
+- id: b3-globex
+  persona: rep
+  tenant_id: tenant_a
+  messages:
+  - What's the latest headcount at Globex (globex.com)?
+  fault: '503'
+  fixture: null
+  expect: {}
+  generated: false

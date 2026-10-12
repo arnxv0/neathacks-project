@@ -63,7 +63,8 @@ for d in sorted((root / "fixes").iterdir()) if (root / "fixes").exists() else []
         check(f"fix {d.name} attempt {at['n']} replay runs exist", missing, [])
         passed = sum(not runs[i]["_failed"] for i in ids if i in runs)
         check(f"fix {d.name} attempt {at['n']} replay score", f"{rp.get('passed')}/{rp.get('total')}", f"{passed}/{len(ids)}")
-        if at.get("commit"): check(f"fix {d.name} attempt {at['n']} replay ran on the fix commit", {runs[i]["target_commit"][:7] for i in ids if i in runs} <= {at["commit"][:7]}, True)
+        if at.get("commit") and at.get("merged") is not False:    # a branch that was not merged is re-checked on main, by design
+            check(f"fix {d.name} attempt {at['n']} replay ran on the fix commit", {runs[i]["target_commit"][:7] for i in ids if i in runs} <= {at["commit"][:7]}, True)
 
 # after-pass: the latest run per (attack, seed)
 after_runs = collections.defaultdict(list)

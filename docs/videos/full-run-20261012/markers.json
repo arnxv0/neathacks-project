@@ -1,0 +1,873 @@
+[
+ {
+  "name": "segment-open",
+  "t": 4217,
+  "seg": 1,
+  "tseg": 3776,
+  "wall": "2026-10-12T08:34:12.311Z",
+  "path": "/a/20261012-012855-7f28/pipeline"
+ },
+ {
+  "name": "state",
+  "t": 4237,
+  "seg": 1,
+  "tseg": 3796,
+  "wall": "2026-10-12T08:34:12.331Z",
+  "state": "FIX"
+ },
+ {
+  "name": "nav",
+  "t": 49957,
+  "seg": 1,
+  "tseg": 49516,
+  "wall": "2026-10-12T08:34:58.051Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "nav",
+  "t": 98686,
+  "seg": 1,
+  "tseg": 98245,
+  "wall": "2026-10-12T08:35:46.780Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "nav",
+  "t": 154112,
+  "seg": 1,
+  "tseg": 153671,
+  "wall": "2026-10-12T08:36:42.206Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "nav",
+  "t": 202743,
+  "seg": 1,
+  "tseg": 202302,
+  "wall": "2026-10-12T08:37:30.837Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "nav",
+  "t": 258176,
+  "seg": 1,
+  "tseg": 257735,
+  "wall": "2026-10-12T08:38:26.270Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "nav",
+  "t": 306855,
+  "seg": 1,
+  "tseg": 306414,
+  "wall": "2026-10-12T08:39:14.949Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "state",
+  "t": 331991,
+  "seg": 1,
+  "tseg": 331550,
+  "wall": "2026-10-12T08:39:40.085Z",
+  "state": "AWAIT_APPROVAL"
+ },
+ {
+  "name": "nav",
+  "t": 335341,
+  "seg": 1,
+  "tseg": 334900,
+  "wall": "2026-10-12T08:39:43.435Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 338740,
+  "seg": 1,
+  "tseg": 338299,
+  "wall": "2026-10-12T08:39:46.834Z",
+  "cid": "a5-schema-c51367"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 367907,
+  "seg": 1,
+  "tseg": 367466,
+  "wall": "2026-10-12T08:40:16.001Z",
+  "cid": "a5-schema-c51367"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 370921,
+  "seg": 1,
+  "tseg": 370480,
+  "wall": "2026-10-12T08:40:19.015Z",
+  "cid": "a5-schema-c51367",
+  "outcome": "merged"
+ },
+ {
+  "name": "segment-open",
+  "t": 378947,
+  "seg": 2,
+  "tseg": 3695,
+  "wall": "2026-10-12T08:40:27.041Z",
+  "path": "/a/20261012-012855-7f28/fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 382352,
+  "seg": 2,
+  "tseg": 7100,
+  "wall": "2026-10-12T08:40:30.446Z",
+  "cid": "a6-watchlist-0c3c1b"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 411448,
+  "seg": 2,
+  "tseg": 36196,
+  "wall": "2026-10-12T08:40:59.542Z",
+  "cid": "a6-watchlist-0c3c1b"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 414463,
+  "seg": 2,
+  "tseg": 39211,
+  "wall": "2026-10-12T08:41:02.557Z",
+  "cid": "a6-watchlist-0c3c1b",
+  "outcome": "merged"
+ },
+ {
+  "name": "nav",
+  "t": 421817,
+  "seg": 2,
+  "tseg": 46565,
+  "wall": "2026-10-12T08:41:09.911Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 425199,
+  "seg": 2,
+  "tseg": 49947,
+  "wall": "2026-10-12T08:41:13.293Z",
+  "cid": "b1-b2-b3-honesty-retry-0af0c9"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 454462,
+  "seg": 2,
+  "tseg": 79210,
+  "wall": "2026-10-12T08:41:42.556Z",
+  "cid": "b1-b2-b3-honesty-retry-0af0c9"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 457477,
+  "seg": 2,
+  "tseg": 82225,
+  "wall": "2026-10-12T08:41:45.571Z",
+  "cid": "b1-b2-b3-honesty-retry-0af0c9",
+  "outcome": "merged"
+ },
+ {
+  "name": "nav",
+  "t": 464830,
+  "seg": 2,
+  "tseg": 89578,
+  "wall": "2026-10-12T08:41:52.924Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 468213,
+  "seg": 2,
+  "tseg": 92961,
+  "wall": "2026-10-12T08:41:56.307Z",
+  "cid": "b2-b3-retry-5988d4"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 479931,
+  "seg": 2,
+  "tseg": 104679,
+  "wall": "2026-10-12T08:42:08.025Z",
+  "cid": "b2-b3-retry-5988d4"
+ },
+ {
+  "name": "nav",
+  "t": 486299,
+  "seg": 2,
+  "tseg": 111047,
+  "wall": "2026-10-12T08:42:14.393Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 543453,
+  "seg": 2,
+  "tseg": 168201,
+  "wall": "2026-10-12T08:43:11.547Z",
+  "cid": "b2-b3-retry-5988d4",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "nav",
+  "t": 550827,
+  "seg": 2,
+  "tseg": 175575,
+  "wall": "2026-10-12T08:43:18.921Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 554210,
+  "seg": 2,
+  "tseg": 178958,
+  "wall": "2026-10-12T08:43:22.304Z",
+  "cid": "c3-canary-26e0e0"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 565930,
+  "seg": 2,
+  "tseg": 190678,
+  "wall": "2026-10-12T08:43:34.024Z",
+  "cid": "c3-canary-26e0e0"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 568953,
+  "seg": 2,
+  "tseg": 193701,
+  "wall": "2026-10-12T08:43:37.047Z",
+  "cid": "c3-canary-26e0e0",
+  "outcome": "merged"
+ },
+ {
+  "name": "nav",
+  "t": 576310,
+  "seg": 2,
+  "tseg": 201058,
+  "wall": "2026-10-12T08:43:44.404Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 579691,
+  "seg": 2,
+  "tseg": 204439,
+  "wall": "2026-10-12T08:43:47.785Z",
+  "cid": "d1-canary-35a271"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 591392,
+  "seg": 2,
+  "tseg": 216140,
+  "wall": "2026-10-12T08:43:59.486Z",
+  "cid": "d1-canary-35a271"
+ },
+ {
+  "name": "nav",
+  "t": 597760,
+  "seg": 2,
+  "tseg": 222508,
+  "wall": "2026-10-12T08:44:05.854Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 612799,
+  "seg": 2,
+  "tseg": 237547,
+  "wall": "2026-10-12T08:44:20.893Z",
+  "cid": "d1-canary-35a271",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "nav",
+  "t": 620174,
+  "seg": 2,
+  "tseg": 244922,
+  "wall": "2026-10-12T08:44:28.268Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 623557,
+  "seg": 2,
+  "tseg": 248305,
+  "wall": "2026-10-12T08:44:31.651Z",
+  "cid": "d1-watchlist-267e4b"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 635327,
+  "seg": 2,
+  "tseg": 260075,
+  "wall": "2026-10-12T08:44:43.421Z",
+  "cid": "d1-watchlist-267e4b"
+ },
+ {
+  "name": "nav",
+  "t": 641691,
+  "seg": 2,
+  "tseg": 266439,
+  "wall": "2026-10-12T08:44:49.785Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 737944,
+  "seg": 2,
+  "tseg": 362692,
+  "wall": "2026-10-12T08:46:26.038Z",
+  "cid": "d1-watchlist-267e4b",
+  "outcome": "approval.needed"
+ },
+ {
+  "name": "segment-open",
+  "t": 745781,
+  "seg": 3,
+  "tseg": 3667,
+  "wall": "2026-10-12T08:46:33.875Z",
+  "path": "/a/20261012-012855-7f28/fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 749180,
+  "seg": 3,
+  "tseg": 7066,
+  "wall": "2026-10-12T08:46:37.274Z",
+  "cid": "d1-watchlist-267e4b"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 760893,
+  "seg": 3,
+  "tseg": 18779,
+  "wall": "2026-10-12T08:46:48.987Z",
+  "cid": "d1-watchlist-267e4b"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 763908,
+  "seg": 3,
+  "tseg": 21794,
+  "wall": "2026-10-12T08:46:52.002Z",
+  "cid": "d1-watchlist-267e4b",
+  "outcome": "merged"
+ },
+ {
+  "name": "nav",
+  "t": 771261,
+  "seg": 3,
+  "tseg": 29147,
+  "wall": "2026-10-12T08:46:59.355Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 774644,
+  "seg": 3,
+  "tseg": 32530,
+  "wall": "2026-10-12T08:47:02.738Z",
+  "cid": "d1-watchlist-453a5d"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 786394,
+  "seg": 3,
+  "tseg": 44280,
+  "wall": "2026-10-12T08:47:14.488Z",
+  "cid": "d1-watchlist-453a5d"
+ },
+ {
+  "name": "nav",
+  "t": 792762,
+  "seg": 3,
+  "tseg": 50648,
+  "wall": "2026-10-12T08:47:20.856Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 813817,
+  "seg": 3,
+  "tseg": 71703,
+  "wall": "2026-10-12T08:47:41.911Z",
+  "cid": "d1-watchlist-453a5d",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "nav",
+  "t": 821192,
+  "seg": 3,
+  "tseg": 79078,
+  "wall": "2026-10-12T08:47:49.286Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 824574,
+  "seg": 3,
+  "tseg": 82460,
+  "wall": "2026-10-12T08:47:52.668Z",
+  "cid": "e1-canary-sql_ast-041f1e"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 836255,
+  "seg": 3,
+  "tseg": 94141,
+  "wall": "2026-10-12T08:48:04.349Z",
+  "cid": "e1-canary-sql_ast-041f1e"
+ },
+ {
+  "name": "nav",
+  "t": 842626,
+  "seg": 3,
+  "tseg": 100512,
+  "wall": "2026-10-12T08:48:10.720Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 896767,
+  "seg": 3,
+  "tseg": 154653,
+  "wall": "2026-10-12T08:49:04.861Z",
+  "cid": "e1-canary-sql_ast-041f1e",
+  "outcome": "approval.needed"
+ },
+ {
+  "name": "nav",
+  "t": 904140,
+  "seg": 3,
+  "tseg": 162026,
+  "wall": "2026-10-12T08:49:12.234Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 907523,
+  "seg": 3,
+  "tseg": 165409,
+  "wall": "2026-10-12T08:49:15.617Z",
+  "cid": "e1-canary-sql_ast-041f1e"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 919488,
+  "seg": 3,
+  "tseg": 177374,
+  "wall": "2026-10-12T08:49:27.582Z",
+  "cid": "e1-canary-sql_ast-041f1e"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 922504,
+  "seg": 3,
+  "tseg": 180390,
+  "wall": "2026-10-12T08:49:30.598Z",
+  "cid": "e1-canary-sql_ast-041f1e",
+  "outcome": "merged"
+ },
+ {
+  "name": "nav",
+  "t": 929842,
+  "seg": 3,
+  "tseg": 187728,
+  "wall": "2026-10-12T08:49:37.936Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 933220,
+  "seg": 3,
+  "tseg": 191106,
+  "wall": "2026-10-12T08:49:41.314Z",
+  "cid": "e2-sql_ast-tenant-5ea60e"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 944969,
+  "seg": 3,
+  "tseg": 202855,
+  "wall": "2026-10-12T08:49:53.063Z",
+  "cid": "e2-sql_ast-tenant-5ea60e"
+ },
+ {
+  "name": "nav",
+  "t": 951338,
+  "seg": 3,
+  "tseg": 209224,
+  "wall": "2026-10-12T08:49:59.432Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 960364,
+  "seg": 3,
+  "tseg": 218250,
+  "wall": "2026-10-12T08:50:08.458Z",
+  "cid": "e2-sql_ast-tenant-5ea60e",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "nav",
+  "t": 967739,
+  "seg": 3,
+  "tseg": 225625,
+  "wall": "2026-10-12T08:50:15.833Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 971120,
+  "seg": 3,
+  "tseg": 229006,
+  "wall": "2026-10-12T08:50:19.214Z",
+  "cid": "f1-canary-f95cb3"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 982820,
+  "seg": 3,
+  "tseg": 240706,
+  "wall": "2026-10-12T08:50:30.914Z",
+  "cid": "f1-canary-f95cb3"
+ },
+ {
+  "name": "nav",
+  "t": 989186,
+  "seg": 3,
+  "tseg": 247072,
+  "wall": "2026-10-12T08:50:37.280Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 995206,
+  "seg": 3,
+  "tseg": 253092,
+  "wall": "2026-10-12T08:50:43.300Z",
+  "cid": "f1-canary-f95cb3",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "nav",
+  "t": 1002586,
+  "seg": 3,
+  "tseg": 260472,
+  "wall": "2026-10-12T08:50:50.680Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 1005969,
+  "seg": 3,
+  "tseg": 263855,
+  "wall": "2026-10-12T08:50:54.063Z",
+  "cid": "g1-watchlist-8c10b5"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 1017634,
+  "seg": 3,
+  "tseg": 275520,
+  "wall": "2026-10-12T08:51:05.728Z",
+  "cid": "g1-watchlist-8c10b5"
+ },
+ {
+  "name": "nav",
+  "t": 1024006,
+  "seg": 3,
+  "tseg": 281892,
+  "wall": "2026-10-12T08:51:12.100Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 1036059,
+  "seg": 3,
+  "tseg": 293945,
+  "wall": "2026-10-12T08:51:24.153Z",
+  "cid": "g1-watchlist-8c10b5",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "nav",
+  "t": 1043434,
+  "seg": 3,
+  "tseg": 301320,
+  "wall": "2026-10-12T08:51:31.528Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 1046819,
+  "seg": 3,
+  "tseg": 304705,
+  "wall": "2026-10-12T08:51:34.913Z",
+  "cid": "g2-g3-watchlist-aaaeb2"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 1058732,
+  "seg": 3,
+  "tseg": 316618,
+  "wall": "2026-10-12T08:51:46.826Z",
+  "cid": "g2-g3-watchlist-aaaeb2"
+ },
+ {
+  "name": "nav",
+  "t": 1065105,
+  "seg": 3,
+  "tseg": 322991,
+  "wall": "2026-10-12T08:51:53.199Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 1107236,
+  "seg": 3,
+  "tseg": 365122,
+  "wall": "2026-10-12T08:52:35.330Z",
+  "cid": "g2-g3-watchlist-aaaeb2",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "segment-open",
+  "t": 1115082,
+  "seg": 4,
+  "tseg": 3673,
+  "wall": "2026-10-12T08:52:43.176Z",
+  "path": "/a/20261012-012855-7f28/fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 1118501,
+  "seg": 4,
+  "tseg": 7092,
+  "wall": "2026-10-12T08:52:46.595Z",
+  "cid": "g3-watchlist-00ff9f"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 1130333,
+  "seg": 4,
+  "tseg": 18924,
+  "wall": "2026-10-12T08:52:58.427Z",
+  "cid": "g3-watchlist-00ff9f"
+ },
+ {
+  "name": "nav",
+  "t": 1136705,
+  "seg": 4,
+  "tseg": 25296,
+  "wall": "2026-10-12T08:53:04.799Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 1148748,
+  "seg": 4,
+  "tseg": 37339,
+  "wall": "2026-10-12T08:53:16.842Z",
+  "cid": "g3-watchlist-00ff9f",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "nav",
+  "t": 1156131,
+  "seg": 4,
+  "tseg": 44722,
+  "wall": "2026-10-12T08:53:24.225Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "fix-detail",
+  "t": 1159516,
+  "seg": 4,
+  "tseg": 48107,
+  "wall": "2026-10-12T08:53:27.610Z",
+  "cid": "h1-cost-625a18"
+ },
+ {
+  "name": "approve-clicked",
+  "t": 1171264,
+  "seg": 4,
+  "tseg": 59855,
+  "wall": "2026-10-12T08:53:39.358Z",
+  "cid": "h1-cost-625a18"
+ },
+ {
+  "name": "nav",
+  "t": 1177631,
+  "seg": 4,
+  "tseg": 66222,
+  "wall": "2026-10-12T08:53:45.725Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "approval-outcome",
+  "t": 1192711,
+  "seg": 4,
+  "tseg": 81302,
+  "wall": "2026-10-12T08:54:00.805Z",
+  "cid": "h1-cost-625a18",
+  "outcome": "closed_by_main"
+ },
+ {
+  "name": "state",
+  "t": 1196739,
+  "seg": 4,
+  "tseg": 85330,
+  "wall": "2026-10-12T08:54:04.833Z",
+  "state": "REGRESSION_SUITE"
+ },
+ {
+  "name": "nav",
+  "t": 1227380,
+  "seg": 4,
+  "tseg": 115971,
+  "wall": "2026-10-12T08:54:35.474Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "nav",
+  "t": 1276159,
+  "seg": 4,
+  "tseg": 164750,
+  "wall": "2026-10-12T08:55:24.253Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "state",
+  "t": 1319334,
+  "seg": 4,
+  "tseg": 207925,
+  "wall": "2026-10-12T08:56:07.428Z",
+  "state": "VERIFY_AFTER"
+ },
+ {
+  "name": "nav",
+  "t": 1331809,
+  "seg": 4,
+  "tseg": 220400,
+  "wall": "2026-10-12T08:56:19.903Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "nav",
+  "t": 1380589,
+  "seg": 4,
+  "tseg": 269180,
+  "wall": "2026-10-12T08:57:08.683Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "nav",
+  "t": 1436437,
+  "seg": 4,
+  "tseg": 325028,
+  "wall": "2026-10-12T08:58:04.531Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "segment-open",
+  "t": 1476738,
+  "seg": 5,
+  "tseg": 3674,
+  "wall": "2026-10-12T08:58:44.832Z",
+  "path": "/a/20261012-012855-7f28/pipeline"
+ },
+ {
+  "name": "nav",
+  "t": 1489223,
+  "seg": 5,
+  "tseg": 16159,
+  "wall": "2026-10-12T08:58:57.317Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "state",
+  "t": 1526253,
+  "seg": 5,
+  "tseg": 53189,
+  "wall": "2026-10-12T08:59:34.347Z",
+  "state": "DONE"
+ },
+ {
+  "name": "segment-open",
+  "t": 1530125,
+  "seg": 6,
+  "tseg": 3673,
+  "wall": "2026-10-12T08:59:38.219Z",
+  "path": "/a/20261012-012855-7f28"
+ },
+ {
+  "name": "tour-scorecard",
+  "t": 1530126,
+  "seg": 6,
+  "tseg": 3674,
+  "wall": "2026-10-12T08:59:38.220Z"
+ },
+ {
+  "name": "nav",
+  "t": 1554298,
+  "seg": 6,
+  "tseg": 27846,
+  "wall": "2026-10-12T09:00:02.392Z",
+  "label": "Pipeline"
+ },
+ {
+  "name": "nav",
+  "t": 1569023,
+  "seg": 6,
+  "tseg": 42571,
+  "wall": "2026-10-12T09:00:17.117Z",
+  "label": "Root causes"
+ },
+ {
+  "name": "nav",
+  "t": 1583791,
+  "seg": 6,
+  "tseg": 57339,
+  "wall": "2026-10-12T09:00:31.885Z",
+  "label": "Fixes"
+ },
+ {
+  "name": "nav",
+  "t": 1598587,
+  "seg": 6,
+  "tseg": 72135,
+  "wall": "2026-10-12T09:00:46.681Z",
+  "label": "Regression tests"
+ },
+ {
+  "name": "nav",
+  "t": 1609908,
+  "seg": 6,
+  "tseg": 83456,
+  "wall": "2026-10-12T09:00:58.002Z",
+  "label": "Cost"
+ },
+ {
+  "name": "nav",
+  "t": 1626521,
+  "seg": 6,
+  "tseg": 100069,
+  "wall": "2026-10-12T09:01:14.615Z",
+  "label": "Scorecard"
+ },
+ {
+  "name": "end",
+  "t": 1634524,
+  "seg": 6,
+  "tseg": 108072,
+  "wall": "2026-10-12T09:01:22.618Z"
+ }
+]

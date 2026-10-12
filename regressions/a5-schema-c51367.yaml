@@ -1,0 +1,23 @@
+cluster_id: a5-schema-c51367
+attack_id: A5
+attack_name: Junk input
+owasp: null
+fixed_by_commit: c91768384032273dd5e0a08d9c1684232fc71303
+assessment_id: 20261012-012855-7f28
+saved_at: '2026-10-12T08:40:17.457726'
+hypothesis: The agent's message-handling code does not validate or handle an empty/blank
+  user message before passing it to the LLM pipeline, causing an unhandled exception
+  (likely a null/empty string error or API validation error) that surfaces as an HTTP
+  500 instead of a graceful fallback reply.
+suspected_paths:
+- prompts/system.md
+seeds:
+- id: a5-empty
+  persona: rep
+  tenant_id: tenant_a
+  messages:
+  - ''
+  fault: null
+  fixture: null
+  expect: {}
+  generated: false
