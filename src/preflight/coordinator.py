@@ -1,6 +1,6 @@
 """The Preflight state machine. Everything it knows is on disk in the ledger."""
 from __future__ import annotations
-import datetime as dt, json, os, pathlib, threading, time
+import datetime as dt, json, os, pathlib, subprocess, threading, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import httpx
 from rich.console import Console
@@ -384,6 +384,11 @@ class Coordinator:
                 a.summary = (a.summary or "") + f"\n[not merged: conflicted with an earlier approved fix; main already passes replay {rep.after}]"
                 a.replay = rep; a.merged = False
             else:
+                # main does not close it, so this fix is still needed: bring main into the fix branch and let the same fixer
+                # resolve the conflict markers. The result is replayed and comes back for approval like any other attempt.
+                if self._resolve_conflict(cluster_id, comp):
+                    return
+                cluster = self.ledger.read_cluster(cluster_id)
                 cluster.status = "needs_human"; self.ledger.write_cluster(cluster)
                 self.emit("cluster.needs_human", cluster_id=cluster_id, reason="merge conflict and main still fails replay")
                 raise
@@ -407,6 +412,32 @@ class Coordinator:
         (self.ledger.fix_dir(cluster_id) / "rejected.md").write_text(reason)
         self.emit("rejected", cluster_id=cluster_id, reason=reason)
         self._maybe_finish()
+
+    CONFLICT_COMMENT = ("Your fix passed replay and was approved, but it conflicts with a fix that was merged into main first. "
+                        "Preflight has already run `git merge main` in this worktree, so the conflicted files now contain conflict markers "
+                        "(`<<<<<<<`, `=======`, `>>>>>>>`). Resolve every marker so that BOTH protections are kept: the one already on main "
+                        "and yours. Do not drop either side's guard. Keep the tests green. You are authorized to finish this merge: leave "
+                        "the files resolved and staged or unstaged; Preflight makes the merge commit for you. Do not ask for confirmation.")
+
+    def _resolve_conflict(self, cluster_id: str, comp) -> bool:
+        """Merge main into the fix worktree and send the fixer back to resolve the markers. True when the revised attempt
+        passed replay and the cluster is waiting for approval again."""
+        wt = dispatcher.worktrees_dir(comp.repo_path) / cluster_id
+        if not wt.exists():
+            return False
+        subprocess.run(["git", "merge", "--no-commit", "--no-ff", "main"], cwd=wt, capture_output=True, text=True)
+        self.emit("recovery", kind="conflict_resolution", cluster_id=cluster_id, detail="main merged into the fix branch; fixer resolving the conflict markers")
+        try:
+            self.request_changes(cluster_id, self.CONFLICT_COMMENT)
+        except Exception as e:
+            subprocess.run(["git", "merge", "--abort"], cwd=wt, capture_output=True)
+            self.emit("recovery", kind="conflict_resolution_failed", cluster_id=cluster_id, detail=str(e)[:300])
+            return False
+        left = subprocess.run(["git", "grep", "-l", "-E", "^(<<<<<<<|>>>>>>>) "], cwd=wt, capture_output=True, text=True).stdout.strip()
+        ok = self.ledger.read_cluster(cluster_id).status == "await_approval" and not left
+        if not ok:
+            subprocess.run(["git", "merge", "--abort"], cwd=wt, capture_output=True)
+        return ok
 
     def request_changes(self, cluster_id: str, comment: str) -> None:
         cluster = self.ledger.read_cluster(cluster_id)
