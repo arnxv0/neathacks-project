@@ -43,7 +43,7 @@ try {
   // 3. attack -> clusters
   let s = await until((x) => (x.clusters?.length ?? 0) > 0 || ["DONE", "FAILED", "STOPPED"].includes(x.manifest.state), "clusters-found");
   if (!s.clusters?.length) throw new Error("no clusters: the attack did not land this time");
-  await wait(4000); await nav("Clusters"); mark("clusters-page"); await wait(4000);
+  await wait(4000); await nav("Root causes"); mark("clusters-page"); await wait(4000);
   const cid0 = s.clusters[0].cluster_id;
   const cl = page.locator(`a[href$="/clusters/${cid0}"]`).first(); await glide(page, cl); await cl.click(); mark("cluster-detail", { cid: cid0 });
   await wait(5000); await smoothScroll(page, 500); await wait(6000); await smoothScroll(page, 500); await wait(6000); await smoothScroll(page, 400); await wait(5000); mark("cluster-detail-end");
@@ -67,7 +67,7 @@ try {
   // 6. regression suite + after-pass
   await nav("Pipeline"); mark("pipeline-after");
   await until((x) => ["DONE", "FAILED", "STOPPED"].includes(x.manifest.state), "done", async (i) => { if (i === 6) await smoothScroll(page, 500); });
-  await wait(5000); await nav("Regressions"); mark("regressions"); await wait(8000);
+  await wait(5000); await nav("Regression tests"); mark("regressions"); await wait(8000);
   await nav("Scorecard"); mark("scorecard"); await wait(6000); await smoothScroll(page, 400); await wait(7000); mark("end");
 } catch (e) { mark("error", { message: String(e).slice(0, 300) }); await page.screenshot({ path: join(OUT, "error.png") }).catch(() => {}); }
 await ctx.close(); await browser.close();
