@@ -1,7 +1,7 @@
 # Preflight — neatHack 2026 build log
 
 **Project:** Preflight — an agent that crash-tests other AI agents before launch (attack → trace → fix → prove).
-**Team:** Arnav Dewan (solo).
+**Team:** Jayant Harwalkar ([@jayanthharwalkar](https://github.com/jayanthharwalkar)), Arnav Dewan ([@arnxv0](https://github.com/arnxv0)) and Aryan Sharma.
 **Repo:** this one. Preflight is the root; the demo target [AcmeSales Copilot](targets/acmesales-copilot/) is vendored under `targets/` as a git subtree with its full history (after v0 only Preflight's fixers commit to it; `make target-sync` pulls those commits in).
 **Stack:** Python 3.12 / FastAPI / uv; Next.js 16 + shadcn + Aceternity + Magic UI; Claude via LiteLLM (hackathon gateway) with Bedrock as a switch; neatlogs SDK + public API; Entire CLI (checkpoints, blame); Crustdata company enrichment; cfo.ai (business model via Ari + MCP); Orchestrator.inc `ao` as an optional fixer backend; Docker Compose.
 

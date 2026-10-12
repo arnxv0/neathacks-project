@@ -3,6 +3,8 @@
 **Preflight crash-tests an AI agent before it launches, fixes what breaks, proves the fix, and keeps it fixed.**
 Built for neatHack 2026 with neatlogs, Entire and cfo.ai.
 
+> **Judges:** [**JUDGES.md**](JUDGES.md) is a one-page map — fastest way to judge, each criterion → where to look, and a 5-minute self-verify path.
+
 ## For judges
 
 | Criterion | Evidence |
@@ -72,15 +74,41 @@ Full detail, including what did not work: [STATUS.md](STATUS.md).
 
 ## Run it
 
+**Need:** Python 3.12, [uv](https://docs.astral.sh/uv/), Node 22, and a logged-in [Claude Code CLI](https://www.npmjs.com/package/@anthropic-ai/claude-code) (only the fixer step uses it). Keys for LiteLLM, neatlogs and Crustdata go in `.env`.
+
 ```bash
-cp .env.example .env                  # LiteLLM, neatlogs, Crustdata keys
-make target-checkout && uv sync       # vendored target → ../acmesales-copilot as its own git repo
-make dev-host                         # target :8100, chaos proxy :8300, API :8200, dashboard :3000
+# 1. Clone and enter the repo
+git clone https://github.com/arnxv0/neathacks-project.git
+cd neathacks-project
+
+# 2. Configure keys (see SETUP.md §0 for where each comes from)
+cp .env.example .env            # fill in LiteLLM, neatlogs, Crustdata keys
+
+# 3. Install Preflight + check the demo target out as its own sibling repo
+uv sync
+make target-checkout            # vendored target → ../acmesales-copilot (own git repo)
+
+# 4. Start everything (target :8100, chaos proxy :8300, API :8200, dashboard :3000)
+make dev-host                   # tmux session "preflight"; attach with: tmux attach -t preflight
+#   sanity: curl localhost:8100/health && curl localhost:8200/api/health, then open http://localhost:3000
+
+# 5. Run an assessment — start small (the hero attack, ~$0.05 LiteLLM + ~$1 on your Claude login)
 uv run preflight run ../acmesales-copilot --mode dev --attacks D1 --seeds 3
-uv run preflight db stats             # one-screen summary of the latest assessment
+
+# 6. See the result
+uv run preflight db stats       # one-screen summary of the latest assessment
 ```
 
-Approve fixes in the dashboard or with `uv run preflight approve <assessment> <cluster>`. From-scratch steps, Windows notes and known traps: [SETUP.md](SETUP.md). Make is optional everywhere.
+A run pauses at `AWAIT_APPROVAL`. **Approve a fix** in the dashboard (Fixes → a fix → Approve & merge) or on the CLI:
+
+```bash
+uv run preflight approve <assessment_id> <cluster_id>
+uv run preflight resume  <assessment_id>      # continue after any interruption
+```
+
+Bigger runs: `--attacks P0 --no-fix` (all 20 attacks, find only) or `--mode full` (3 seeds/attack, K=5 replays, $8 cap).
+
+`make` is optional everywhere — every recipe is a plain `uv run` / `npm` / `docker compose` command (see the `Makefile`). From-scratch install, Docker, Windows notes and known traps: **[SETUP.md](SETUP.md)**.
 
 ## Test another agent
 
