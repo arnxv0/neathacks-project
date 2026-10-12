@@ -48,21 +48,18 @@ def _served_version(port: int) -> str | None:
         return None
 
 def _recycle_target(target: pathlib.Path, port: int) -> str:
-    """The long-running target keeps the old code in memory. If it serves another commit than the reset checkout, stop it:
-    systemd restarts it (deployed host) and `preflight run` boots it when missing (local)."""
-    head = _git(target, "rev-parse", "--short", "HEAD", check=False)
-    served = _served_version(port)
-    if served is None:
+    """The long-running target keeps the code it started with in memory, and its /health reads the commit from git at
+    request time, so the version it reports says nothing about what it runs. Always stop it after a reset: systemd
+    restarts it (deployed host) and `preflight run` boots it when it is missing (local)."""
+    if _served_version(port) is None:
         return "not running"
-    if head and served.startswith(head[:7]):
-        return "already on the reset commit"
     try:
         pids = subprocess.run(["lsof", "-ti", f"tcp:{port}", "-sTCP:LISTEN"], capture_output=True, text=True).stdout.split()
     except FileNotFoundError:
-        return f"serving {served}; restart it by hand"
+        return "running; restart it by hand so it loads the reset code"
     for pid in pids:
         subprocess.run(["kill", pid], capture_output=True)
-    return f"stopped (was serving {served})" if pids else f"serving {served}; restart it by hand"
+    return "stopped so it restarts on the reset code" if pids else "running; restart it by hand so it loads the reset code"
 
 def reset(target: pathlib.Path | None = None) -> dict:
     t = target or default_target()

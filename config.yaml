@@ -18,7 +18,7 @@ models:
     nova-2-lite: [0.06, 0.24]
     nova-pro: [0.8, 3.2]
 ports: {target: 8100, replay_target: 8101, api: 8200, proxy: 8300, web: 3000}
-fixers: {max_parallel: 3, max_retries: 2, max_turns: 40}
+fixers: {max_parallel: 5, max_retries: 2, max_turns: 40}
 neatlogs:
   app_url: https://app.neatlogs.com
   target_workflow: acmesales-copilot
