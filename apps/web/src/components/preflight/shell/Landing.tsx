@@ -17,7 +17,7 @@ export function Landing({ hasData }: { hasData: boolean }) {
         <TextGenerateEffect words="Your agent passed the happy path. Now meet the users who didn't read it." className="text-3xl md:text-5xl font-semibold tracking-tight" />
         <p className="text-muted-foreground">Preflight attacks an AI agent with hostile users, broken tools and injected data, finds the first step where it goes wrong, fixes the code, and proves the fix holds.</p>
         <div className="flex items-center justify-center gap-3">
-          <Button size="lg" onClick={() => start.mutate({ mode: "dev", attacks: "D1" }, { onSuccess: (r) => { toast.success(`Assessment ${r.assessment_id} started`); router.push(`/a/${r.assessment_id}`); }, onError: (e) => toast.error(String(e)) })} disabled={start.isPending}>
+          <Button size="lg" onClick={() => start.mutate({ mode: "dev", attacks: "D1", seeds: 3 }, { onSuccess: (r) => { toast.success(`Assessment ${r.assessment_id} started`); router.push(`/a/${r.assessment_id}`); }, onError: (e) => toast.error(String(e)) })} disabled={start.isPending}>
             {start.isPending ? "Launching…" : "Run an assessment"}
           </Button>
           {hasData && <Button size="lg" variant="outline" onClick={() => router.push("/a/latest")}>Open latest</Button>}
