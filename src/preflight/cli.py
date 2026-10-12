@@ -95,6 +95,16 @@ def proxy(port: int = 8300, host: str = "127.0.0.1"):
     from .chaos.proxy import app as proxy_app
     uvicorn.run(proxy_app, host=host, port=port)
 
+@app.command("demo-reset")
+def demo_reset(target_dir: pathlib.Path = typer.Argument(None, help="target checkout (default: ../acmesales-copilot)")):
+    """Fresh instance for a demo: target back on v0-unfixed, ledger and regression suite moved to ledger-archive/."""
+    from . import demo
+    try:
+        out = demo.reset(target_dir.resolve() if target_dir else None)
+    except demo.ResetError as e:
+        console.print(f"[red]{e}"); raise typer.Exit(1)
+    console.print(out)
+
 @app.command()
 def stop():
     """Kill switch: create the STOP file."""

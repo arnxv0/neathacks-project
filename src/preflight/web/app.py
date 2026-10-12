@@ -209,6 +209,26 @@ def unstop():
         p.unlink()
     return {"ok": True}
 
+@app.get("/api/demo")
+def demo_info():
+    from .. import demo
+    return {"reset_available": demo.available(), "unfixed_tag": demo.UNFIXED_TAG}
+
+@app.post("/api/demo/reset")
+def demo_reset():
+    """Fresh instance: built-in target back on its unfixed tag, ledger and regression suite archived (not deleted)."""
+    from .. import demo
+    for aid, proc in list(JOBS.items()):          # a run started from this API must not keep writing into the archived ledger
+        if proc.poll() is None:
+            proc.terminate()
+        JOBS.pop(aid, None)
+    try:
+        out = demo.reset()
+    except demo.ResetError as e:
+        raise HTTPException(409, str(e))
+    index._cache.clear()
+    return out
+
 @app.get("/api/regressions")
 def regressions():
     from ..replay import regress

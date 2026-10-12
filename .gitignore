@@ -30,3 +30,5 @@ deploy/aws/terraform/tfplan
 
 # sandbox targets: third-party clones + their registry (docs/SANDBOX_TARGETS.md)
 /sandbox/
+# demo reset moves the ledger and regression suite here instead of deleting them
+/ledger-archive/

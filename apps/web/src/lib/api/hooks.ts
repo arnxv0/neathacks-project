@@ -50,6 +50,13 @@ export function useStart() {
   return useMutation({ mutationFn: (body: StartBody) => post<{ assessment_id: string | null; pid: number }>("/api/assessments", body), onSuccess: () => qc.invalidateQueries({ queryKey: keys.assessments }) });
 }
 export const useStop = () => useMutation({ mutationFn: () => post("/api/stop") });
+export type DemoReset = { ok: boolean; target_commit: string; fix_branches_removed: number; assessments_archived: number; regression_suites_archived: number; archive: string | null; target_process: string };
+export const useDemoInfo = () => useQuery({ queryKey: ["demo"], queryFn: () => api<{ reset_available: boolean; unfixed_tag: string }>("/api/demo") });
+/** Fresh instance: target back on its unfixed tag, ledger and regression suite archived. Every cached query is dropped. */
+export function useDemoReset() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => post<DemoReset>("/api/demo/reset"), onSuccess: () => qc.clear() });
+}
 
 /* Targets. A target that is cloning or onboarding is worked on by a background job in the API, so both queries poll fast until it settles. */
 const BUSY = new Set(["cloning", "onboarding"]);

@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Activity, Boxes, Coins, Crosshair, GitBranch, Layers, Menu, Radar, ShieldAlert, Square, TriangleAlert, Workflow } from "lucide-react";
+import { Activity, Boxes, Coins, Crosshair, GitBranch, Layers, Menu, Radar, RotateCcw, ShieldAlert, Square, TriangleAlert, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -12,7 +12,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimatedList, AnimatedListItem } from "@/components/ui/animated-list";
-import { useAssessments, useStop, useSummary } from "@/lib/api/hooks";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useAssessments, useDemoInfo, useDemoReset, useStop, useSummary } from "@/lib/api/hooks";
 import { useEventStream } from "@/lib/sse/useEventStream";
 import type { AssessmentRow, PreflightEvent, SandboxMeta, Summary } from "@/lib/api/types";
 import { money, STATE_LABEL, timeAgo } from "@/lib/format";
@@ -90,6 +91,7 @@ function SidebarBody({ id, data, all, onNavigate }: { id?: string; data?: Summar
           {id && !(all ?? []).some((a) => a.assessment_id === id) && <option value={id}>{id}</option>}
           {(all ?? []).filter((a) => a.kind !== "regress" || a.assessment_id === id).map((a) => <option key={a.assessment_id} value={a.assessment_id}>{a.assessment_id} · {a.label ?? a.mode}</option>)}
         </select>
+        <ResetDemoButton onDone={onNavigate} />
       </div>
     </>
   );
@@ -142,6 +144,42 @@ function StopButton() {
 }
 
 /** The sandbox target an assessment ran against: repository name, linking to the target page. Icon only below 640px. */
+/** Fresh instance for a demo. Asks first: it moves every assessment out of the dashboard and rewinds the target. */
+function ResetDemoButton({ onDone }: { onDone?: () => void }) {
+  const info = useDemoInfo();
+  const reset = useDemoReset();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  if (!info.data?.reset_available) return null;
+  const onReset = () => {
+    setOpen(false);
+    toast.promise(reset.mutateAsync().then((r) => { onDone?.(); router.push("/"); return r; }), {
+      loading: "Resetting the demo…",
+      success: (r) => `Fresh instance: target on ${r.target_commit}, ${r.assessments_archived} assessments and ${r.regression_suites_archived} regression suites archived`,
+      error: (e) => `Reset failed: ${e instanceof Error ? e.message : String(e)}`,
+    });
+  };
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="mt-2 w-full justify-start gap-2 text-muted-foreground" disabled={reset.isPending} aria-busy={reset.isPending} />}>
+        {reset.isPending ? <Spinner className="size-3.5" /> : <RotateCcw className="size-3.5" />}Reset demo
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Start from a fresh instance?</DialogTitle>
+          <DialogDescription>
+            The demo agent goes back to its unfixed version ({info.data.unfixed_tag}), its fix branches are removed, and every assessment and regression suite leaves the dashboard. Nothing is deleted: they are moved to ledger-archive on the server. A run that is in progress is stopped.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={onReset}>Reset demo</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function TargetChip({ sandbox }: { sandbox: SandboxMeta }) {
   const name = repoName(sandbox.url ?? sandbox.slug);
   return (
