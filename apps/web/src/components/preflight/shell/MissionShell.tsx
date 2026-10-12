@@ -20,16 +20,41 @@ import { money, STATE_LABEL, timeAgo } from "@/lib/format";
 import { EASE, LiveDot, Mono, StatusBadge, Truncate } from "../shared";
 import { startRouteProgress } from "./RouteProgress";
 
+/** `hint` says in plain words what the page shows; it is printed under the label so nobody has to guess. */
 const NAV = [
-  { href: "", label: "Scorecard", icon: Radar },
-  { href: "/pipeline", label: "Pipeline", icon: Workflow },
-  { href: "/clusters", label: "Clusters", icon: Layers },
-  { href: "/fixes", label: "Fixes", icon: GitBranch },
-  { href: "/regressions", label: "Regressions", icon: ShieldAlert },
-  { href: "/cost", label: "Cost", icon: Coins },
+  { href: "", label: "Scorecard", hint: "how many attacks got through", icon: Radar },
+  { href: "/pipeline", label: "Pipeline", hint: "the run, stage by stage, live", icon: Workflow },
+  { href: "/clusters", label: "Root causes", hint: "failed runs grouped by cause", icon: Layers },
+  { href: "/fixes", label: "Fixes", hint: "proposed code fixes to review", icon: GitBranch },
+  { href: "/regressions", label: "Regression tests", hint: "saved from approved fixes", icon: ShieldAlert },
+  { href: "/cost", label: "Cost", hint: "what this run spent", icon: Coins },
 ];
 /** Sections that do not belong to one assessment. */
-const WORKSPACE = [{ href: "/targets", label: "Targets", icon: Crosshair }];
+const WORKSPACE = [{ href: "/targets", label: "Targets", hint: "the agents under test", icon: Crosshair }];
+/** One sentence per event type for the activity bar; anything not listed falls back to its raw type. */
+const EVENT_TEXT: Record<string, (e: PreflightEvent) => string> = {
+  "state.changed": (e) => `stage: ${STATE_LABEL[String(e.state)] ?? e.state}`,
+  "attack.planned": (e) => `${e.total} attack runs planned`,
+  "run.started": (e) => `attack run started · ${e.run_id}`,
+  "run.finished": (e) => `attack run finished · ${e.run_id}`,
+  "run.graded": (e) => `${e.failed ? "attack got through" : "attack blocked"} · ${e.run_id}`,
+  "cluster.created": (e) => `root cause found · ${e.cluster_id}`,
+  "cluster.merged": (e) => `root causes combined into ${e.cluster_id}`,
+  "divergence.ready": (e) => `first wrong step located · ${e.cluster_id}`,
+  "graph.ready": (e) => `affected code mapped · ${e.cluster_id}`,
+  "fix.started": (e) => `fixer started · ${e.cluster_id}`,
+  "fix.attempt.done": (e) => `fixer ${e.ok ? "committed a fix" : "attempt failed"} · ${e.cluster_id}`,
+  "replay.started": (e) => `replaying the failing runs · ${e.cluster_id}`,
+  "replay.progress": (e) => `replay ${e.passed}/${e.total} · ${e.cluster_id}`,
+  "replay.done": (e) => `replay ${e.before} → ${e.after} · ${e.cluster_id}`,
+  "approval.needed": (e) => `waiting for your approval · ${e.cluster_id}`,
+  "review.action": (e) => `reviewer chose ${e.action} · ${e.cluster_id}`,
+  merged: (e) => `${e.merged === false ? "closed by main, not merged" : "fix merged"} · ${e.cluster_id}`,
+  "regression.result": (e) => `regression test ${e.passed ? "holding" : "REGRESSED"} · ${e.cluster_id}`,
+  "cost.updated": (e) => `spend so far $${Number(e.spent ?? 0).toFixed(3)}`,
+  recovery: (e) => `recovered from ${String(e.kind ?? "an error").replace(/_/g, " ")}${e.cluster_id ? ` · ${e.cluster_id}` : ""}`,
+};
+const eventText = (e: PreflightEvent) => EVENT_TEXT[e.type]?.(e) ?? `${e.type}${e.cluster_id ? ` · ${e.cluster_id}` : e.run_id ? ` · ${e.run_id}` : ""}`;
 const ITEM = "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-150";
 const repoName = (url: string) => url.replace(/^https:\/\/github\.com\//, "").replace(/\.git$/, "");
 
@@ -61,7 +86,7 @@ function SidebarBody({ id, data, all, onNavigate }: { id?: string; data?: Summar
           return (
             <Link key={n.href} href={n.href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(ITEM, active ? "text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground")}>
               {active && pill}
-              <n.icon aria-hidden className={cn("relative size-4", active && "text-primary")} /><span className="relative">{n.label}</span>
+              <n.icon aria-hidden className={cn("relative size-4 shrink-0", active && "text-primary")} /><span className="relative min-w-0 leading-tight">{n.label}<span className="block text-[11px] font-normal text-muted-foreground">{n.hint}</span></span>
             </Link>
           );
         })}
@@ -69,14 +94,14 @@ function SidebarBody({ id, data, all, onNavigate }: { id?: string; data?: Summar
       <nav aria-label="Assessment" className="space-y-1 border-t border-sidebar-border p-3">
         <p className="label px-3 pb-1">{id ? "assessment" : "latest assessment"}</p>
         {NAV.map((n) => {
-          if (!navId) return <span key={n.href} aria-disabled="true" className={cn(ITEM, "text-muted-foreground/50")}><n.icon aria-hidden className="size-4" />{n.label}</span>;
+          if (!navId) return <span key={n.href} aria-disabled="true" className={cn(ITEM, "text-muted-foreground/50")}><n.icon aria-hidden className="size-4 shrink-0" /><span className="min-w-0 leading-tight">{n.label}<span className="block text-[11px] font-normal">{n.hint}</span></span></span>;
           const href = base + n.href;
           const active = !!id && (n.href === "" ? path === base : path.startsWith(href));
           return (
             <Link key={n.href} href={href} onClick={onNavigate} aria-current={active ? "page" : undefined}
               className={cn(ITEM, active ? "text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground")}>
               {active && pill}
-              <n.icon aria-hidden className={cn("relative size-4", active && "text-primary")} /><span className="relative">{n.label}</span>
+              <n.icon aria-hidden className={cn("relative size-4 shrink-0", active && "text-primary")} /><span className="relative min-w-0 leading-tight">{n.label}<span className="block text-[11px] font-normal text-muted-foreground">{n.hint}</span></span>
               {n.href === "/fixes" && awaiting > 0 && <span className="relative ml-auto rounded-full bg-pending/20 px-1.5 text-[10px] font-medium tabular-nums text-pending" aria-label={`${awaiting} awaiting approval`}>{awaiting}</span>}
             </Link>
           );
@@ -244,14 +269,14 @@ function AssessmentError({ data }: { data?: Summary }) {
 /** Live event ticker. Part of the layout (sticky at the bottom of the content column), so it never covers content. */
 function EventTicker({ events, connected }: { events: PreflightEvent[]; connected: boolean }) {
   return (
-    <footer aria-label="Latest events" className="sticky bottom-0 z-20 flex h-9 items-center gap-3 overflow-hidden border-t border-border bg-sidebar/90 px-3 backdrop-blur sm:px-4">
-      <span className="label shrink-0">events</span>
+    <footer aria-label="Latest activity in this run" title="The last things that happened in this run, newest on the right. The full list is on the Pipeline page." className="sticky bottom-0 z-20 flex h-9 items-center gap-3 overflow-hidden border-t border-border bg-sidebar/90 px-3 backdrop-blur sm:px-4">
+      <span className="label shrink-0">latest activity</span>
       <div className="fade-right min-w-0 flex-1 overflow-hidden">
-        {events.length === 0 ? <span className="mono text-[11px] whitespace-nowrap text-muted-foreground">{connected ? "waiting for events…" : "connecting to the event stream…"}</span> : (
+        {events.length === 0 ? <span className="mono text-[11px] whitespace-nowrap text-muted-foreground">{connected ? "nothing has happened in this run yet" : "connecting to the live feed…"}</span> : (
           <AnimatedList delay={400} className="h-9 flex-row items-center justify-start gap-6">
             {events.slice(-6).map((e) => (
               <AnimatedListItem key={e.seq}>
-                <span className="mono text-[11px] whitespace-nowrap text-muted-foreground"><span className="text-primary">{e.type}</span>{e.cluster_id ? ` ${e.cluster_id}` : e.run_id ? ` ${e.run_id}` : e.state ? ` ${e.state}` : ""} · {timeAgo(e.ts)}</span>
+                <span className="mono text-[11px] whitespace-nowrap text-muted-foreground"><span className="text-primary">{eventText(e).split(" · ")[0]}</span>{eventText(e).includes(" · ") ? ` · ${eventText(e).split(" · ").slice(1).join(" · ")}` : ""} · {timeAgo(e.ts)}</span>
               </AnimatedListItem>
             ))}
           </AnimatedList>

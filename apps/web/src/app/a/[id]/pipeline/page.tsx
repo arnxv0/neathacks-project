@@ -26,7 +26,7 @@ export default function Pipeline({ params }: { params: Promise<{ id: string }> }
         const rows = eventsToRows(events, id, data.attacks, new Set(data.clusters.filter((c) => c.resolution === "closed_by_main").map((c) => c.cluster_id)));
         return (
           <div>
-            <PageHeader title="Pipeline" subtitle="every stage of the assessment, live from the event ledger" />
+            <PageHeader title="Pipeline" subtitle="The run from start to finish. Each circle is a stage; the feed lists every event as it is written to the ledger." />
             <div className="space-y-6">
               <Card className={PANEL}><CardContent className="p-4 sm:p-6"><StageTrack state={data.manifest.state} counts={counts} /></CardContent></Card>
               <FadeRise delay={0.05}><Card className={PANEL}><CardContent className="p-4"><AttackProgress s={data} /></CardContent></Card></FadeRise>

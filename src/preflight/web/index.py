@@ -6,6 +6,8 @@ from .. import config
 from ..attacks import catalog
 from ..ledger import Ledger, list_assessments
 from ..report.report import scorecard
+from ..report import cost_report
+from .. import grading
 
 _cache: dict[str, tuple[float, dict]] = {}
 
@@ -55,8 +57,13 @@ def summary(aid: str) -> dict:
         return hit[1]
     m = led.manifest()
     sp = specs()
-    attack_runs = led.runs(kind="attack")
     all_runs = led.runs()
+    tools_meta = (m.get("tools", {}).get("components", {}) or {})
+    tools_meta = next(iter(tools_meta.values()), {}).get("tools", {}) if tools_meta else {}
+    for r in all_runs:     # from the step log, not from the stored flag: older ledgers predate the check
+        r.delivered = grading.delivered(led.read_steps(r.run_id), tools_meta)
+    attack_runs = [r for r in all_runs if r.kind == "attack"]
+    lost = {r.run_id for r in all_runs if not r.failed and not r.delivered}
     sc = scorecard(attack_runs, sp)
     # An assessment can run the after pass more than once (it re-runs after late approvals). The scorecard shows the
     # latest pass only: the newest after-run per (attack, seed), not the sum of every pass.
@@ -69,18 +76,31 @@ def summary(aid: str) -> dict:
     for c in led.clusters():
         d = c.model_dump()
         d["attempts"] = [a.model_dump() for a in led.attempts(c.cluster_id)]
+        for a in d["attempts"]:      # replay passes that were never delivered do not count
+            ids = (a.get("replay") or {}).get("run_ids") or []
+            if a.get("replay"):
+                a["replay"]["undelivered"] = sum(1 for x in ids if x in lost)
         d["attack_name"] = sp[c.attack_ids[0]].name if c.attack_ids[0] in sp else c.attack_ids[0]
         d["owasp"] = sp[c.attack_ids[0]].owasp if c.attack_ids[0] in sp else None
         resolve(d)
         clusters.append(d)
     reg_path = root / "report" / "regressions.json"
     regressions = json.loads(reg_path.read_text()) if reg_path.exists() else []
+    by_suite: dict[str, list[str]] = {}
+    for r in all_runs:               # regression runs are named regress-<cluster id prefix>-<seed>-<rand>
+        if r.kind == "regression" and r.run_id.startswith("regress-") and r.run_id in lost:
+            for reg in regressions:
+                if r.run_id.startswith(f"regress-{reg['cluster_id'][:24]}-"):
+                    by_suite.setdefault(reg["cluster_id"], []).append(r.run_id)
+    for reg in regressions:
+        reg["undelivered_runs"] = sorted(set(reg.get("undelivered_runs") or []) | set(by_suite.get(reg["cluster_id"], [])))
     fix_cost = sum(a["cost_usd"] for c in clusters for a in c["attempts"])
     data = {"assessment_id": aid, "manifest": m, "scorecard": sc, "after": after, "clusters": clusters,
             "runs": [{**r.model_dump(exclude={"tool_calls"}), "tool_names": [t.get("name") for t in r.tool_calls]} for r in all_runs],
             "regressions": regressions,
             "cost": {"target_usd": sum(r.usd for r in all_runs), "preflight_llm_usd": m.get("preflight_llm_usd", 0.0), "fixer_usd": fix_cost,
-                     "cap_usd": (m.get("caps") or {}).get("max_usd"), "runs": len(all_runs)},
+                     "cap_usd": (m.get("caps") or {}).get("max_usd"), "runs": len(all_runs),
+                     "inputs": [{"variable": r[1], "value": r[2], "unit": r[3], "source": r[4]} for r in cost_report.rows_for(led) if r[0] == "cogs"]},
             "attacks": {k: {"id": v.id, "name": v.name, "family": v.family, "owasp": v.owasp, "tier": v.tier, "safe_behavior": v.safe_behavior,
                             "description": v.description} for k, v in sp.items()}}
     _cache[aid] = (mt, data)
@@ -101,6 +121,8 @@ def cluster_detail(aid: str, cluster_id: str) -> dict:
     out = c.model_dump()
     out["divergence_md"] = (cdir / "divergence.md").read_text() if (cdir / "divergence.md").exists() else ""
     out["graph_md"] = (cdir / "graph.md").read_text() if (cdir / "graph.md").exists() else ""
+    tools_meta = (led.manifest().get("tools", {}).get("components", {}) or {})
+    tools_meta = next(iter(tools_meta.values()), {}).get("tools", {}) if tools_meta else {}
     out["attempts"] = []
     for a in led.attempts(cluster_id):
         ad = a.model_dump()
@@ -109,6 +131,10 @@ def cluster_detail(aid: str, cluster_id: str) -> dict:
         ad["checkpoint_md"] = (fdir / "checkpoint.md").read_text() if (fdir / "checkpoint.md").exists() else ""
         ad["brief"] = (fdir / "brief.md").read_text() if (fdir / "brief.md").exists() else ""
         ad["replay_runs"] = [led.read_run(r).model_dump(exclude={"tool_calls"}) for r in (a.replay.run_ids if a.replay else []) if (led.root / "runs" / r / "run.json").exists()]
+        for rr in ad["replay_runs"]:
+            rr["delivered"] = grading.delivered(led.read_steps(rr["run_id"]), tools_meta)
+        if ad.get("replay"):
+            ad["replay"]["undelivered"] = sum(1 for rr in ad["replay_runs"] if not rr["failed"] and not rr["delivered"])
         out["attempts"].append(ad)
     resolve(out)
     fail_steps = [s.model_dump() for s in led.read_steps(c.run_ids[0])] if c.run_ids else []

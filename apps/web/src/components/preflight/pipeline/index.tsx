@@ -176,7 +176,7 @@ export function useStageCounts(s: Summary | undefined, events: PreflightEvent[])
       ATTACK: `${attack.length} runs`, GRADE: `${attack.filter((r) => r.failed).length} succeeded`, CLUSTER: `${s.clusters.length} clusters`,
       DIVERGE: `${s.clusters.filter((c) => c.divergence).length} divergences`, FIX: `${fixes} attempts · ${replays.length} replays`,
       AWAIT_APPROVAL: `${s.clusters.filter((c) => c.resolution === "merged").length} merged${s.clusters.some((c) => c.resolution === "closed_by_main") ? ` · ${s.clusters.filter((c) => c.resolution === "closed_by_main").length} closed by main` : ""}`, REGRESSION_SUITE: `${s.regressions.length} suites`,
-      VERIFY_AFTER: s.after ? `${s.after.succeeded}/${s.after.total} after` : after.length ? `${after.length} runs` : undefined, DONE: s.after ? `${s.scorecard.succeeded} → ${s.after.succeeded}` : undefined,
+      VERIFY_AFTER: s.after ? `${s.after.succeeded}/${s.after.total} after${s.after.undelivered ? ` · ${s.after.undelivered} not delivered` : ""}` : after.length ? `${after.length} runs` : undefined, DONE: s.after ? `${s.scorecard.succeeded} → ${s.after.succeeded}` : undefined,
     } as Record<string, string | undefined>;
   }, [s, events.length]);
 }

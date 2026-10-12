@@ -17,7 +17,7 @@ from .runner.session import run_one
 from .analyze import cluster as clustermod, divergence as divmod
 from .llm import analyst
 from .fix import dispatcher
-from .grading import grade_run
+from .grading import grade_run, delivered as grading_delivered
 from .replay import replay as replaymod, regress as regressmod
 from .models import Cluster, Seed as _Seed
 from .target import loader, manifest as manifestmod, process
@@ -74,6 +74,7 @@ class Coordinator:
 
     @classmethod
     def from_ledger(cls, assessment_id: str) -> "Coordinator":
+        ensure_proxy()   # approve / request-changes / resume replay against the proxy; a CLI process has none of its own
         led = Ledger(assessment_id)
         m = led.manifest()
         c = cls(pathlib.Path(m["target_dir"]), mode=m.get("mode", "dev"), attacks=m.get("attacks"), assessment_id=assessment_id,
@@ -202,6 +203,7 @@ class Coordinator:
                              transcript_path=str(self.ledger.run_dir(run.run_id) / "transcript.md"))
             run.verdicts = run_all(ctx)
             run.failed = any(not v.passed for v in run.verdicts.values()) or bool(run.error)
+            run.delivered = grading_delivered(steps, tools_meta)
             from .runner import transcript
             self.ledger.write_run(run, steps=steps, transcript=transcript.render(run, steps, s.messages, s.fault, s.fixture))
             graded.append(run)
@@ -500,7 +502,7 @@ class Coordinator:
                 a = self.specs.get(reg["attack_id"]) or next((x for x in catalog.load_all() if x.id == reg["attack_id"]), None)
                 if a is None:
                     continue
-                caught = []
+                caught, lost = [], []
                 for sd in reg["seeds"]:
                     seed = _Seed.model_validate(sd)
                     try:
@@ -513,14 +515,17 @@ class Coordinator:
                     self.seed_of[rid] = (a, seed)
                     if run.failed:
                         caught.append(run.run_id)
+                    elif not run.delivered:
+                        lost.append(run.run_id)
+                # a suite holds only if every seed was delivered and blocked; undelivered seeds make it inconclusive, not green
                 res = {"cluster_id": reg["cluster_id"], "attack_id": reg["attack_id"], "fixed_by_commit": reg.get("fixed_by_commit"),
-                       "seeds": len(reg["seeds"]), "failed_runs": caught, "passed": not caught, "target_commit": commit}
+                       "seeds": len(reg["seeds"]), "failed_runs": caught, "undelivered_runs": lost, "passed": not caught and not lost, "target_commit": commit}
                 if caught:
                     res["blame"] = regressmod.blame(comp.repo_path, reg, reg.get("fixed_by_commit"))
                 results.append(res)
                 if emit:
                     self.emit("regression.result", **res)
-                console.print(f"{'[green]PASS' if not caught else '[red]REGRESSED'}[/] {reg['cluster_id']}" +
+                console.print(f"{'[red]REGRESSED' if caught else '[yellow]INCONCLUSIVE (attack not delivered)' if lost else '[green]PASS'}[/] {reg['cluster_id']}" +
                               (f"  blame: {res['blame']['commits'][0]['sha']} {res['blame']['commits'][0]['subject']}" if caught and res.get("blame", {}).get("commits") else ""))
         (self.ledger.root / "report" / "regressions.json").write_text(json.dumps(results, indent=2, default=str))
         return results

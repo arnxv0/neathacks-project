@@ -4,7 +4,8 @@ import csv, datetime as dt
 from .. import config
 from ..ledger import Ledger
 
-def write(ledger: Ledger) -> dict:
+def rows_for(ledger: Ledger) -> list[tuple]:
+    """The measured rows. One definition, used by the CSV and by the dashboard's Cost page."""
     runs = ledger.runs()
     attack_runs = [r for r in runs if r.kind == "attack"]
     replay_runs = [r for r in runs if r.kind in ("replay", "regression")]
@@ -27,6 +28,10 @@ def write(ledger: Ledger) -> dict:
         ("meta", "assessment_id", ledger.assessment_id, "", m.get("mode", "")),
         ("meta", "measured_at", dt.datetime.utcnow().isoformat(), "", "replace the estimates in cfo/assumptions.csv with these"),
     ]
+    return rows
+
+def write(ledger: Ledger) -> dict:
+    rows = rows_for(ledger)
     out_dir = ledger.root / "report"; out_dir.mkdir(exist_ok=True)
     for path in (out_dir / "cost_report.csv", config.OUT_DIR / "cost_report.csv"):
         path.parent.mkdir(exist_ok=True)

@@ -10,7 +10,7 @@ export default function Cost({ params }: { params: Promise<{ id: string }> }) {
   const query = useSummary(id);
   return (
     <DataView query={query} what="the cost report" skeleton={<CostSkeleton />}>
-      {(data) => <div><PageHeader title="Cost" subtitle="every LLM call in the loop is metered; these numbers feed the business model" /><CostPanel s={data} /></div>}
+      {(data) => <div><PageHeader title="Cost" subtitle="What this run spent, measured from the ledger: the target model, Preflight\u2019s own model calls and the fixer sessions. The table at the bottom is what goes into the cfo.ai model." /><CostPanel s={data} /></div>}
     </DataView>
   );
 }

@@ -55,6 +55,7 @@ export function ReplayDots({ replay, compact = false, live }: { replay: FixAttem
   const total = live?.total ?? replay?.total ?? 0;
   const passed = live?.passed ?? replay?.passed ?? 0;
   const [b1, b2] = (replay?.before ?? "0/0").split("/").map(Number);
+  const lost = live ? 0 : replay?.undelivered ?? 0;
   return (
     <div className={cn("flex min-w-0 max-w-full flex-wrap items-center gap-x-3 gap-y-1.5", compact ? "text-[11px]" : "text-sm")}>
       <div className="flex min-w-0 flex-wrap items-center gap-1">
@@ -66,8 +67,9 @@ export function ReplayDots({ replay, compact = false, live }: { replay: FixAttem
       <div className="flex min-w-0 flex-wrap items-center gap-1">
         <span className="mono text-muted-foreground mr-1">after</span>
         {Array.from({ length: total }).map((_, i) => <span key={i} style={{ animationDelay: `${(b2 + i) * 30}ms` }} className={cn("dot-in shrink-0 rounded-full transition-colors duration-200", compact ? "size-2" : "size-3", i < passed ? "bg-pass" : i < (live ? live.total : total) && live && i >= passed ? "bg-fail" : "bg-muted-foreground/30")} />)}
-        <span className={cn("mono ml-1", passed === total && total ? "text-pass" : "text-pending")}>{passed}/{total}</span>
+        <span className={cn("mono ml-1", passed === total && total && !lost ? "text-pass" : "text-pending")}>{passed}/{total}</span>
       </div>
+      {lost > 0 && <span className="mono text-pending" title="The agent called a proxied tool, but no request reached the chaos proxy in these runs, so the attack never arrived.">{lost === total ? "attack not delivered in any of these runs" : `attack not delivered in ${lost} of ${total}`}</span>}
     </div>
   );
 }

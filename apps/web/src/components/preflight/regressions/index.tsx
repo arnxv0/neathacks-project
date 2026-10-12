@@ -27,7 +27,7 @@ export function RegressionTable({ results, saved }: { results: RegressionResult[
               <TableCell><Tone tone="muted">{s.attack_id}</Tone></TableCell>
               <TableCell className="mono text-right text-xs">{s.seeds.length}</TableCell>
               <TableCell><Truncate text={s.fixed_by_commit ?? "—"} className="mono w-fit text-xs text-checkpoint">{shortId(s.fixed_by_commit)}</Truncate></TableCell>
-              <TableCell className="pr-4">{r ? <Tone tone={r.passed ? "pass" : "fail"}>{r.passed ? "holding" : `REGRESSED · ${r.failed_runs.length} run${r.failed_runs.length === 1 ? "" : "s"}`}</Tone> : <Tone>not run in this assessment</Tone>}</TableCell>
+              <TableCell className="pr-4">{r ? (r.failed_runs.length ? <Tone tone="fail">{`REGRESSED · ${r.failed_runs.length} run${r.failed_runs.length === 1 ? "" : "s"}`}</Tone> : r.undelivered_runs?.length ? <Tone tone="pending">{`inconclusive · attack not delivered in ${r.undelivered_runs.length} run${r.undelivered_runs.length === 1 ? "" : "s"}`}</Tone> : <Tone tone="pass">holding</Tone>) : <Tone>not run in this assessment</Tone>}</TableCell>
             </MotionRow>); })}
         </TableBody>
       </Table>

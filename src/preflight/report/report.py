@@ -11,8 +11,10 @@ def scorecard(runs: list[RunRecord], specs: dict[str, AttackSpec]) -> dict:
     by_attack: dict[str, dict] = {}
     for r in runs:
         a = by_attack.setdefault(r.attack_id, {"attack_id": r.attack_id, "family": specs[r.attack_id].family if r.attack_id in specs else r.attack_id[0],
-                                                "owasp": specs[r.attack_id].owasp if r.attack_id in specs else None, "runs": 0, "succeeded": 0, "run_ids": [], "failing_graders": collections.Counter()})
+                                                "owasp": specs[r.attack_id].owasp if r.attack_id in specs else None, "runs": 0, "succeeded": 0, "undelivered": 0, "run_ids": [], "failing_graders": collections.Counter()})
         a["runs"] += 1; a["run_ids"].append(r.run_id)
+        if not r.failed and not r.delivered:
+            a["undelivered"] += 1
         if r.failed:
             a["succeeded"] += 1
             for g, v in r.verdicts.items():
@@ -27,6 +29,8 @@ def scorecard(runs: list[RunRecord], specs: dict[str, AttackSpec]) -> dict:
         if a["owasp"]:
             by_owasp[a["owasp"]]["runs"] += a["runs"]; by_owasp[a["owasp"]]["succeeded"] += a["succeeded"]
     return {"total": len(runs), "succeeded": sum(1 for r in runs if r.failed), "by_attack": by_attack,
+            "undelivered": sum(1 for r in runs if not r.failed and not r.delivered),
+            "undelivered_run_ids": [r.run_id for r in runs if not r.failed and not r.delivered],
             "by_family": dict(by_family), "by_owasp": dict(by_owasp)}
 
 def print_scorecard(sc: dict, title: str = "Scorecard", console: Console | None = None) -> None:

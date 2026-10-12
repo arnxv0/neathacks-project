@@ -71,6 +71,8 @@ class RunRecord(BaseModel):
     verdicts: dict[str, Verdict] = Field(default_factory=dict)
     failed: bool = False
     error: str | None = None
+    delivered: bool = True               # False: the agent called a proxied tool but no request reached the chaos proxy, so the
+                                         # fault / poisoned record never arrived. Such a run proves nothing and is never a pass.
     kind: Literal["attack", "replay", "regression"] = "attack"
 
 class Divergence(BaseModel):

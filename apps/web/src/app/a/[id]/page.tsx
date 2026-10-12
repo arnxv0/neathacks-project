@@ -22,7 +22,7 @@ export default function Overview({ params }: { params: Promise<{ id: string }> }
             <ScorecardHero sc={data.scorecard} after={data.after} running={running} />
             <section><SectionHeader title="Attack matrix" subtitle={`${Object.keys(data.scorecard.by_attack).length} of the ${Object.keys(data.attacks).length} attacks in the catalog ran, ${data.scorecard.total} seeds · mapped to the OWASP Top 10 for LLM applications`} /><FamilyGrid sc={data.scorecard} attacks={data.attacks} runs={data.runs} id={id} after={data.after} /></section>
             <section>
-              <SectionHeader title="Failure clusters" subtitle="failed runs grouped by root cause, each with its first divergence step" />
+              <SectionHeader title="Root causes" subtitle="failed runs grouped by cause (clusters), each with the first step where the run went wrong" />
               {data.clusters.length ? <ClusterGrid clusters={data.clusters} id={id} />
                 : <EmptyState icon={ShieldCheck} title={running ? "Clustering runs as they finish…" : "No failures clustered"} hint={running ? "Clusters appear here as soon as failed runs are graded." : "Every attack in this assessment was blocked."} action={running ? <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/a/${id}/pipeline`} />}>Watch the pipeline</Button> : undefined} />}
             </section>

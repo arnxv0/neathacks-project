@@ -41,7 +41,7 @@ export default function FixPage({ params }: { params: Promise<{ id: string; cid:
                   <AlertTitle>Approved, but this diff was not merged</AlertTitle>
                   <AlertDescription>
                     The branch conflicted with a fix that was approved earlier, so Preflight left it out and replayed the same failing seeds on main instead
-                    {a.merge_commit ? <> (commit <span className="mono">{a.merge_commit.slice(0, 7)}</span>)</> : null}. Main passed {a.replay?.after ?? "the replay"}, so this root cause was already closed by the earlier fixes. The replay proof below is that run on main, not a run of this diff.
+                    {a.merge_commit ? <> (commit <span className="mono">{a.merge_commit.slice(0, 7)}</span>)</> : null}. {a.replay?.undelivered ? <>Those replay runs prove nothing, though: in {a.replay.undelivered} of {a.replay.total} the attack never reached the agent, because no request arrived at the chaos proxy. This root cause is not shown to be closed by this assessment.</> : <>Main passed {a.replay?.after ?? "the replay"}, so this root cause was already closed by the earlier fixes. The replay proof below is that run on main, not a run of this diff.</>}
                   </AlertDescription>
                 </Alert>
               )}
@@ -63,7 +63,7 @@ export default function FixPage({ params }: { params: Promise<{ id: string; cid:
                 <TabsContent value="replays" className="pt-3"><FadeRise>
                   {(a?.replay_runs ?? []).length ? (
                     <ul className="space-y-1.5">{(a?.replay_runs ?? []).map((r) => (
-                      <li key={r.run_id} className="flex min-w-0 items-center gap-2"><Tone tone={r.failed ? "fail" : "pass"}>{r.failed ? "fail" : "pass"}</Tone><Link className="mono min-w-0 truncate rounded-sm text-xs text-primary hover:underline" href={`/a/${id}/runs/${r.run_id}`}>{r.run_id}</Link>{r.neatlogs_url && <a className="mono shrink-0 rounded-sm text-xs text-trace hover:underline" href={r.neatlogs_url} target="_blank" rel="noreferrer">trace</a>}</li>
+                      <li key={r.run_id} className="flex min-w-0 items-center gap-2"><Tone tone={r.failed ? "fail" : r.delivered === false ? "pending" : "pass"}>{r.failed ? "fail" : r.delivered === false ? "not delivered" : "pass"}</Tone><Link className="mono min-w-0 truncate rounded-sm text-xs text-primary hover:underline" href={`/a/${id}/runs/${r.run_id}`}>{r.run_id}</Link>{r.neatlogs_url && <a className="mono shrink-0 rounded-sm text-xs text-trace hover:underline" href={r.neatlogs_url} target="_blank" rel="noreferrer">trace</a>}</li>
                     ))}</ul>
                   ) : <EmptyState icon={ListChecks} title="No replay runs yet" hint="Replays start after the fixer's tests are green." />}
                 </FadeRise></TabsContent>

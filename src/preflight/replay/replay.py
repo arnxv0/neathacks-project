@@ -107,7 +107,7 @@ def replay_cluster(ledger: Ledger, cluster: Cluster, spec: SystemSpec, worktree:
                 new_id = f"{kind}-{cluster.cluster_id[:24]}-{seed.id}-{i+1}-{os.urandom(2).hex()}"
                 run, steps, state = run_one(attack, seed, rspec, ledger, guard, mode="replay", target_commit=commit, kind=kind, run_id=new_id)
                 run = grade_run(ledger, attack, seed, run, canaries=canaries, watchlist=watchlist, budgets=budgets or spec.budgets, tools_meta=tools_meta)
-                total += 1; passed += 0 if run.failed else 1; run_ids.append(run.run_id)
+                total += 1; passed += 0 if (run.failed or not run.delivered) else 1; run_ids.append(run.run_id)
                 if on_progress:
                     on_progress(passed, total, run)
     return Replay(before=before, after=f"{passed}/{total}", passed=passed, total=total, run_ids=run_ids)
