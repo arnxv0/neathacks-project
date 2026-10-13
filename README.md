@@ -10,18 +10,20 @@ Built for neatHack 2026 with neatlogs, Entire and cfo.ai.
 | Criterion | Evidence |
 |---|---|
 | The agent, end to end | **23 of 50 attack runs get through on the unfixed demo agent. 0 of 50 get through after the fixes.** This is one full run (`20261012-012855-7f28`, 31 minutes, $10.83). Every attack was delivered in both passes. It found 15 root causes. 6 fix branches were merged. The other 9 root causes were already closed by those merges, which Preflight checked by replaying them on main. [report.json](docs/evidence/report-full-20261012.json) · [cost report](docs/evidence/cost-report-full-20261012.csv) · [screen recording of the run](docs/videos/full-run-20261012/). An earlier run printed 0/50 too, but 13 of its runs never received their attack, so we withdrew that number (see [DECISIONS.md](DECISIONS.md), 2026-10-12). |
-| neatlogs, before / after | Same D1 seed, same prompt: [before, the agent obeys the injected record](https://app.neatlogs.com/traces/7d1d755db145b6a4e43c890d0d572518?projectId=2d5433a0-d4a3-45cf-99f8-aa80525d3d56&orgId=a56c598b-8c3d-431b-8356-cfd095118423) → [after the fix](https://app.neatlogs.com/traces/e1226f3c980aacba62bb535a82d31eb2?projectId=2d5433a0-d4a3-45cf-99f8-aa80525d3d56&orgId=a56c598b-8c3d-431b-8356-cfd095118423). Every run in the report carries its trace id. neatlogs also raised an incident on Preflight's own LLM judge: [Evaluator outputs plain text instead of required JSON](https://app.neatlogs.com/incidents/0a9355db-71c9-46d5-b484-942060a8d7bb?orgId=a56c598b-8c3d-431b-8356-cfd095118423&projectId=2d5433a0-d4a3-45cf-99f8-aa80525d3d56). Our code treated an unreadable judge answer as a pass. We fixed that in [`b589f2b`](https://github.com/arnxv0/neathacks-project/commit/b589f2b): the judge now retries once and an unreadable answer is never a pass. |
+| neatlogs, before / after | Same D1 seed, same prompt: [before, the agent obeys the injected record](https://app.neatlogs.com/traces/7d1d755db145b6a4e43c890d0d572518?projectId=2d5433a0-d4a3-45cf-99f8-aa80525d3d56&orgId=a56c598b-8c3d-431b-8356-cfd095118423) → [after the fix](https://app.neatlogs.com/traces/e1226f3c980aacba62bb535a82d31eb2?projectId=2d5433a0-d4a3-45cf-99f8-aa80525d3d56&orgId=a56c598b-8c3d-431b-8356-cfd095118423). Every run in the report carries its trace id. neatlogs also raised an incident on Preflight's own LLM judge: [Evaluator outputs plain text instead of required JSON](https://app.neatlogs.com/incidents/0a9355db-71c9-46d5-b484-942060a8d7bb?orgId=a56c598b-8c3d-431b-8356-cfd095118423&projectId=2d5433a0-d4a3-45cf-99f8-aa80525d3d56) ([screenshot](docs/evidence/neatlogs-incident-judge-json.jpg)). Our code treated an unreadable judge answer as a pass. We fixed that in [`b589f2b`](https://github.com/arnxv0/neathacks-project/commit/b589f2b): the judge now retries once and an unreadable answer is never a pass. |
 | Entire | Checkpoint `01M4N5WX9MEXD72YX851HPQR6K` on commit [`dedc414`](https://entire.io/gh/arnxv0/neathacks-project/commit/dedc4146f6668ef93ec8e4ba1050b13428fd9561) (`preflight db stats`, written by a Claude Code session; [screenshot](docs/evidence/entire-checkpoint-dedc414.jpg)). Fixer commits in the target carry `Entire-Checkpoint` trailers; entire-graph impact/search feeds every fixer brief. |
 | cfo.ai | Operating model built through the cfo.ai MCP from Claude Code, with a **Measured** scenario fed by the real run: [board summary, Main vs Measured](docs/evidence/cfo-board-main-vs-measured.jpg) · [build report](docs/evidence/cfo-model-build-20261011.md) |
 | Demo video | [Product demo, 2:39](docs/videos/preflight-product-demo.mp4) · [Explainer, 2:03](docs/videos/preflight-explainer.mp4). Both were made from the first run. [Unedited recording of the latest full run, 27 min in 6 parts](docs/videos/full-run-20261012/) |
-| Live demo | [preflight.44-223-140-186.sslip.io](https://preflight.44-223-140-186.sslip.io) (login in the submission form). One Terraform-managed AWS host with a finished cloud run (`20261012-080554-95db`: 3/3 → 0/3, one fix merged, one sent back after a merge conflict) and a **Reset demo** button to start again from the unfixed agent. Details: [deploy/aws/README.md](deploy/aws/README.md) |
+| Live demo | [preflight.44-223-140-186.sslip.io](https://preflight.44-223-140-186.sslip.io) (login in the submission form). It is one AWS host managed with Terraform. It holds a finished cloud run (`20261012-080554-95db`, 3/3 → 0/3). Press **Reset demo** to start again from the unfixed agent, then run an assessment and approve the fixes yourself. Details: [deploy/aws/README.md](deploy/aws/README.md) |
 | Recovery from failed actions | `recoveries[]` in the report: fixer retries after failed replays, merge conflicts re-checked on main (9 of 15 branches in the first run were not merged for that reason), a wall-clock stop resumed, [a regression caught and blamed to its commit](docs/evidence/regression-caught-blame-20261011.json) |
 
-Build log and submission checklist: [hackathon.md](hackathon.md). Everything that went wrong and what we did about it: [DECISIONS.md](DECISIONS.md).
+The build log is in [hackathon.md](hackathon.md). Everything that went wrong, and what we did about it, is in [DECISIONS.md](DECISIONS.md).
 
 ## What it does
 
-Preflight attacks an agent the way production will: hostile users, broken tools, and data that carries instructions. It grades every run deterministically, groups failures by root cause, finds the first step where a bad run diverged from a good one, and dispatches one Claude Code fixer per root cause. A human approves. Preflight replays the exact failing runs K times to prove the fix holds, merges it, and keeps the failure as a permanent regression test that is blamed to the commit if it ever comes back.
+Preflight attacks an agent the way production will. It uses hostile users, broken tools and data that carries hidden instructions. Each run is graded by deterministic checks first. Failures are grouped by root cause. For each root cause, Preflight finds the first step where a bad run went a different way from a good run.
+
+Then it fixes. One Claude Code session works on each root cause, in its own git worktree. Preflight replays the exact failing runs several times to prove the fix holds. A human approves the merge. The failure is kept as a permanent regression test. If it ever comes back, Preflight names the commit that caused it.
 
 ```mermaid
 flowchart LR
@@ -75,54 +77,40 @@ Full detail, including what did not work: [STATUS.md](STATUS.md).
 
 ## Run it
 
-**Need:** Python 3.12, [uv](https://docs.astral.sh/uv/), Node 22, and a logged-in [Claude Code CLI](https://www.npmjs.com/package/@anthropic-ai/claude-code) (only the fixer step uses it). Keys for LiteLLM, neatlogs and Crustdata go in `.env`.
+You need Python 3.12, [uv](https://docs.astral.sh/uv/), Node 22 and a logged-in [Claude Code CLI](https://www.npmjs.com/package/@anthropic-ai/claude-code). Only the fix step uses Claude Code. Put your LiteLLM, neatlogs and Crustdata keys in `.env`.
 
 ```bash
-# 1. Clone and enter the repo
-git clone https://github.com/arnxv0/neathacks-project.git
-cd neathacks-project
-
-# 2. Configure keys (see SETUP.md §0 for where each comes from)
-cp .env.example .env            # fill in LiteLLM, neatlogs, Crustdata keys
-
-# 3. Install Preflight + check the demo target out as its own sibling repo
+git clone https://github.com/arnxv0/neathacks-project.git && cd neathacks-project
+cp .env.example .env
 uv sync
-make target-checkout            # vendored target → ../acmesales-copilot (own git repo)
-
-# 4. Start everything (target :8100, chaos proxy :8300, API :8200, dashboard :3000)
-make dev-host                   # tmux session "preflight"; attach with: tmux attach -t preflight
-#   sanity: curl localhost:8100/health && curl localhost:8200/api/health, then open http://localhost:3000
-
-# 5. Run an assessment. Start small (the hero attack, ~$0.05 LiteLLM + ~$1 on your Claude login)
+make target-checkout     # copies the demo agent to ../acmesales-copilot
+make dev-host            # starts the agent, proxy, API and dashboard
 uv run preflight run ../acmesales-copilot --mode dev --attacks D1 --seeds 3
-
-# 6. See the result
-uv run preflight db stats       # one-screen summary of the latest assessment
+uv run preflight db stats
 ```
 
-A run pauses at `AWAIT_APPROVAL`. **Approve a fix** in the dashboard (Fixes → a fix → Approve & merge) or on the CLI:
+Open http://localhost:3000 to watch the run. It stops and waits when a fix is ready. Approve the fix in the dashboard, or run:
 
 ```bash
 uv run preflight approve <assessment_id> <cluster_id>
-uv run preflight resume  <assessment_id>      # continue after any interruption
 ```
 
-Bigger runs: `--attacks P0 --no-fix` (all 20 attacks, find only) or `--mode full` (3 seeds/attack, K=5 replays, $8 cap).
+For the full catalog use `--mode full`. To find problems without fixing them, add `--no-fix`. If a run is interrupted, `uv run preflight resume <assessment_id>` continues it.
 
-`make` is optional everywhere. Every recipe is a plain `uv run` / `npm` / `docker compose` command (see the `Makefile`). From-scratch install, Docker, Windows notes and known traps: **[SETUP.md](SETUP.md)**.
+You do not need `make`. Each recipe in the `Makefile` is a plain command. [SETUP.md](SETUP.md) has the from-scratch install, Docker, Windows notes and known traps.
 
 ## Test another agent
 
-Any public GitHub repo can be added as a *sandbox target* from the dashboard or the CLI. The clone is inert (no hooks, no submodules, nothing executed), a Claude Code session with file tools only writes the `preflight.yaml` and a small HTTP adapter, a human approves the diff, and the agent is then started only inside a locked-down Docker container. Sandbox targets are find-only by default.
+You can point Preflight at any public GitHub repo. Preflight clones it without running anything from it. A Claude Code session with file tools only writes a `preflight.yaml` and a small HTTP adapter. A human reviews that diff. The agent then runs only inside a locked-down Docker container. These targets are find-only by default.
 
 ```bash
 uv run preflight target add https://github.com/<owner>/<repo>
-uv run preflight target onboard <owner>--<repo>      # writes preflight.yaml + preflight_adapter.py, ends in needs_review
-uv run preflight target approve <owner>--<repo>      # after reading sandbox/registry/<slug>.onboard.patch
-uv run preflight run sandbox:<owner>--<repo>         # needs Docker; set PREFLIGHT_SANDBOX_LITELLM_API_KEY to a scoped key
+uv run preflight target onboard <owner>--<repo>
+uv run preflight target approve <owner>--<repo>      # after you read the generated patch
+uv run preflight run sandbox:<owner>--<repo>         # needs Docker
 ```
 
-Flow, API, threat model and what is not protected against: [docs/SANDBOX_TARGETS.md](docs/SANDBOX_TARGETS.md).
+The flow, the threat model and the limits are in [docs/SANDBOX_TARGETS.md](docs/SANDBOX_TARGETS.md).
 
 ## Documents
 
